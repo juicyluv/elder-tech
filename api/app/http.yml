@@ -1,0 +1,93 @@
+openapi: '3.0.0'
+info:
+  version: "1.0.0"
+  title: "Diploma"
+  license:
+    name: "MIT"
+servers:
+  - url: https://{hostname}/api/v1
+    variables:
+      hostname:
+        default: localhost
+security:
+  - bearerAuth: []
+paths:
+  /users/{id}:
+    get:
+      operationId: getUser
+      description: "Get user by ID."
+      parameters:
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: "User object"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: "Error response"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Error:
+      description: Error
+      type: object
+      required:
+        - message
+        - slug
+      properties:
+        message:
+          type: string
+        slug:
+          type: string
+
+    User:
+      type: object
+      required:
+        - id
+        - name
+        - phone
+        - created_at
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        surname:
+          type: string
+        patronymic:
+          type: string
+        age:
+          type: integer
+        gender:
+          type: integer
+        phone:
+          type: string
+          format: phone
+        email:
+          type: string
+          format: string
+        image_url:
+          type: string
+          format: url
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        lastOnline:
+          $ref: "#/components/schemas/Timestamp"
+        deleted_at:
+          $ref: "#/components/schemas/Timestamp"
+
+    Timestamp:
+      type: string
+      format: date-time
+      description: A timestamp representing a date and time in RFC3339 format
