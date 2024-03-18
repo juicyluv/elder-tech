@@ -7,6 +7,7 @@ const (
 	ErrorTypeNotFound     ErrorType = "not_found"
 	ErrorTypeAuth         ErrorType = "auth"
 	ErrorTypeInternal     ErrorType = "internal"
+	ErrorTypeForbidden    ErrorType = "forbidden"
 )
 
 type Error struct {
@@ -48,6 +49,14 @@ func NewAuthError(error, slug string) Error {
 		error:     error,
 		slug:      slug,
 		errorType: ErrorTypeAuth,
+	}
+}
+
+func NewForbiddenError(error, slug string) Error {
+	return Error{
+		error:     error,
+		slug:      slug,
+		errorType: ErrorTypeForbidden,
 	}
 }
 

@@ -14,7 +14,7 @@ var (
 )
 
 func main() {
-	flag.StringVar(&configPath, "config-path", "./config/config.yaml", "path to configuration file")
+	flag.StringVar(&configPath, "config-path", "config/config.yaml", "path to configuration file")
 	flag.Parse()
 
 	appl, err := app.New(configPath)

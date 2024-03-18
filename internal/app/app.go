@@ -1,11 +1,25 @@
 package app
 
-import "net/http"
+import (
+	"log/slog"
+	"net/http"
+	"os"
+
+	"diplom-backend/internal/common/config"
+)
 
 type App struct {
 	httpServer *http.Server
 }
 
 func New(configPath string) (*App, error) {
+	config.MustReadConfigFromFile(configPath)
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: false,
+		Level:     slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
+
 	return &App{}, nil
 }

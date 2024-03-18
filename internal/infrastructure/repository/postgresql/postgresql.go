@@ -2,10 +2,10 @@ package postgresql
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"diplom-backend/internal/infrastructure/repository"
@@ -25,7 +25,7 @@ func NewPostgresqlPool(ctx context.Context, dbURL string) (*pgxpool.Pool, error)
 }
 
 func parseError(err error, prefix string) error {
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		err = repository.ErrNotFound
 	}
 

@@ -3,13 +3,20 @@ package app
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	stdhttp "net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 
 	"diplom-backend/internal/common/config"
 	"diplom-backend/internal/handlers/http"
 	"diplom-backend/internal/infrastructure/repository/postgresql"
-	"diplom-backend/internal/usecase/users"
+	"diplom-backend/internal/usecase"
 )
 
 func (a *App) Run(ctx context.Context) error {
@@ -17,35 +24,59 @@ func (a *App) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("connecting to postgresql: %w", err)
 	}
-	defer db.Close() // TODO: mb in shutdown
+
+	slog.Info("Connected to database")
 
 	userRepository := postgresql.NewUserRepository(db)
-	// TODO: filesystem
+	userUseCase := usecase.NewUseCase(userRepository)
 
-	// tODO: usecases
-	userUseCase := users.NewUseCase(userRepository)
-	// TODO: handlers
-	handler := http.NewHandler(userUseCase)
-	// TODO: http server
+	authRepository := postgresql.NewAuthRepository(db)
+	authUseCase := usecase.NewAuthUseCase(authRepository)
+
+	handler := http.NewHandler(
+		userUseCase,
+		authUseCase,
+	)
+
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
 	a.httpServer = &stdhttp.Server{
 		Addr:    fmt.Sprintf(":%d", config.HttpPort()),
-		Handler: http.HandlerFromMux(handler, nil),
+		Handler: http.HandlerFromMuxWithBaseURL(handler, r, "/api/v1"),
 	}
 
-	log.Println("running server")
-	if err := a.httpServer.ListenAndServe(); err != nil {
-		return err
+	httpServerCh := make(chan error)
+	go func() {
+		httpServerCh <- a.httpServer.ListenAndServe()
+	}()
+
+	slog.Info(
+		"Server is started",
+		slog.String("addr", a.httpServer.Addr),
+	)
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case s := <-interrupt:
+		slog.Info("Interrupt signal: " + s.String())
+	case err = <-httpServerCh:
+		slog.Error("Server stop signal: " + err.Error())
 	}
 
-	//select {
-	//case <-ctx.Done():
-	//	// TODO: case done chan
-	//	// TODO: case err chan
-	//}
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer shutdownCancel()
 
-	// TODO: run server
-	// TODO: shutdown
+	// Shutdown
+	err = a.httpServer.Shutdown(shutdownCtx)
+	if err != nil {
+		slog.Error("failed to shutdown the server: " + err.Error())
+	}
+	db.Close()
+	slog.Info("Server has been shut down successfully")
 
 	return nil
 }

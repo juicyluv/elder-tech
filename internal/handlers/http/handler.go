@@ -1,22 +1,30 @@
 package http
 
 import (
-	"encoding/json"
 	stderrors "errors"
 	"net/http"
+
+	"github.com/go-chi/render"
 
 	"diplom-backend/internal/common/errors"
 )
 
 type HttpHandler struct {
 	userUseCase UserUseCase
+	authUseCase AuthUseCase
 }
 
-func NewHandler(userUseCase UserUseCase) *HttpHandler {
-	return &HttpHandler{userUseCase: userUseCase}
+func NewHandler(
+	userUseCase UserUseCase,
+	authUseCase AuthUseCase,
+) *HttpHandler {
+	return &HttpHandler{
+		userUseCase: userUseCase,
+		authUseCase: authUseCase,
+	}
 }
 
-func ErrorResponse(w http.ResponseWriter, err error) {
+func ErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
 	var (
 		domainError   errors.Error
 		responseError Error
@@ -41,16 +49,6 @@ func ErrorResponse(w http.ResponseWriter, err error) {
 		responseError.Message = err.Error()
 	}
 
-	response, err := json.Marshal(&responseError)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		response, _ = json.Marshal(Error{
-			Message: "unknown error",
-		})
-		_, _ = w.Write(response)
-		return
-	}
-
-	w.WriteHeader(statusCode)
-	_, _ = w.Write(response)
+	render.Status(r, statusCode)
+	render.JSON(w, r, responseError)
 }

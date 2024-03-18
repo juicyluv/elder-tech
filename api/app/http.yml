@@ -5,27 +5,135 @@ info:
   license:
     name: "MIT"
 servers:
-  - url: https://{hostname}/api/v1
+  - url: http://{hostname}/api/v1
     variables:
       hostname:
         default: localhost
 security:
-  - bearerAuth: []
+  - bearerAuth: [ ]
 paths:
+  /auth/sign-in:
+    post:
+      operationId: signIn
+      description: Sign in
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone
+                - password
+              properties:
+                phone:
+                  type: string
+                password:
+                  type: string
+      responses:
+        400:
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        200:
+          description: Sign in response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInResponse'
+  /auth/sign-up:
+    post:
+      description: Sign up
+      operationId: signUp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - phone
+                - password
+                - type
+              properties:
+                name:
+                  type: string
+                surname:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                type:
+                  type: integer
+                  format: int16
+      responses:
+        400:
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        200:
+          description: Sign up response
+
   /users/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+    patch:
+      operationId: updateUser
+      description: Update user
+      requestBody:
+        description: Request body
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - phone
+              properties:
+                name:
+                  type: string
+                surname:
+                  type: string
+                patronymic:
+                  type: string
+                age:
+                  type: integer
+                  format: int16
+                gender:
+                  type: integer
+                  format: int16
+                phone:
+                  type: string
+                email:
+                  type: string
+        required: true
+      responses:
+        404:
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        200:
+          description: OK
     get:
       operationId: getUser
-      description: "Get user by ID."
-      parameters:
-        - name: id
-          in: path
-          description: User ID
-          required: true
-          schema:
-            type: string
+      description: Get user by ID.
       responses:
         200:
-          description: "User object"
+          description: User
           content:
             application/json:
               schema:
@@ -36,6 +144,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
 components:
   schemas:
     Error:
@@ -57,6 +166,7 @@ components:
         - name
         - phone
         - created_at
+        - type
       properties:
         id:
           type: integer
@@ -67,27 +177,52 @@ components:
           type: string
         patronymic:
           type: string
+        type:
+          type: integer
+          format: int16
         age:
           type: integer
+          format: int16
         gender:
           type: integer
+          format: int16
         phone:
           type: string
-          format: phone
         email:
           type: string
-          format: string
-        image_url:
-          type: string
-          format: url
+        image_id:
+          type: integer
+          format: int64
         created_at:
           $ref: "#/components/schemas/Timestamp"
         lastOnline:
-          $ref: "#/components/schemas/Timestamp"
-        deleted_at:
           $ref: "#/components/schemas/Timestamp"
 
     Timestamp:
       type: string
       format: date-time
       description: A timestamp representing a date and time in RFC3339 format
+
+    SignInResponse:
+      type: object
+      required:
+        - token
+        - name
+        - type
+        - id
+      properties:
+        token:
+          type: string
+          format: jwt
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        type:
+          type: integer
+          format: int16
+        surname:
+          type: string
+        patronymic:
+          type: string

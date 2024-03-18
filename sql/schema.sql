@@ -1,23 +1,24 @@
 create table if not exists user_images
 (
-    id       uuid primary key,
+    id       bigserial primary key,
     filename text not null
 );
 
 create table if not exists users
 (
-    id           uuid primary key,
+    id           bigserial primary key,
+    type         int2        not null,
     name         text        not null,
-    surname      text        not null,
-    patronymic   text        not null,
-    age          int2        not null,
-    gender       int2        not null,
-    image_id     int2        not null,
     phone        text        not null,
-    email        text        not null,
     password_enc text        not null,
     created_at   timestamptz not null,
-    last_online  timestamp,
+    surname      text,
+    patronymic   text,
+    age          int2,
+    gender       int2,
+    email        text,
+    image_id     int8 references user_images (id),
+    last_online  timestamptz,
     deleted_at   timestamptz
 );
 

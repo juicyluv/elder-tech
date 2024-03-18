@@ -1,10 +1,11 @@
 package config
 
 import (
-	"encoding/json"
 	"log"
 	"os"
 	"sync"
+
+	"gopkg.in/yaml.v3"
 )
 
 type config struct {
@@ -34,7 +35,7 @@ func MustReadConfigFromFile(filepath string) {
 			log.Fatalf("Reading config from file %s: %v\n", filepath, err)
 		}
 
-		err = json.Unmarshal(data, &cfg)
+		err = yaml.Unmarshal(data, &cfg)
 		if err != nil {
 			log.Fatalf("Unmarshalling config from file %s: %v\n", filepath, err)
 		}
