@@ -41,6 +41,7 @@ func (a *App) Run(ctx context.Context) error {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use()
 
 	a.httpServer = &stdhttp.Server{
 		Addr:    fmt.Sprintf(":%d", config.HttpPort()),

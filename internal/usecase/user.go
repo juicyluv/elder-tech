@@ -23,8 +23,8 @@ func NewUseCase(repo Repository) *UserUseCase {
 	return &UserUseCase{repo: repo}
 }
 
-func (u *UserUseCase) GetUser(ctx context.Context, id int64) (*domain.User, error) {
-	user, err := u.repo.GetUser(ctx, id)
+func (uc *UserUseCase) GetUser(ctx context.Context, id int64) (*domain.User, error) {
+	user, err := uc.repo.GetUser(ctx, id)
 	if err != nil {
 		if stderrors.Is(err, repository.ErrNotFound) {
 			return nil, errors.NewNotFoundError("Пользователь не найден.", "user")
@@ -35,8 +35,8 @@ func (u *UserUseCase) GetUser(ctx context.Context, id int64) (*domain.User, erro
 	return user, nil
 }
 
-func (u *UserUseCase) UpdateUser(ctx context.Context, user *domain.User) error {
-	user, err := u.repo.GetUser(ctx, user.ID)
+func (uc *UserUseCase) UpdateUser(ctx context.Context, user *domain.User) error {
+	user, err := uc.repo.GetUser(ctx, user.ID)
 	if err != nil {
 		if stderrors.Is(err, repository.ErrNotFound) {
 			return errors.NewNotFoundError("Пользователь не найден.", "user")
@@ -44,7 +44,7 @@ func (u *UserUseCase) UpdateUser(ctx context.Context, user *domain.User) error {
 		return fmt.Errorf("getting user %d: %w", user.ID, err)
 	}
 
-	err = u.repo.UpdateUser(ctx, user)
+	err = uc.repo.UpdateUser(ctx, user)
 	if err != nil {
 		return fmt.Errorf("updating user %d: %w", user.ID, err)
 	}

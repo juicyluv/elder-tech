@@ -1,7 +1,6 @@
 package postgresql
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -11,17 +10,12 @@ import (
 	"diplom-backend/internal/infrastructure/repository"
 )
 
-func NewPostgresqlPool(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.New(ctx, dbURL)
-	if err != nil {
-		return nil, fmt.Errorf("connecting to postgresql: %w", err)
-	}
+type Repository struct {
+	db *pgxpool.Pool
+}
 
-	if err = pool.Ping(ctx); err != nil {
-		return nil, fmt.Errorf("pinging database: %w", err)
-	}
-
-	return pool, nil
+func NewRepository(db *pgxpool.Pool) *Repository {
+	return &Repository{db: db}
 }
 
 func parseError(err error, prefix string) error {

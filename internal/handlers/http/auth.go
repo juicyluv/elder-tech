@@ -12,6 +12,7 @@ import (
 type AuthUseCase interface {
 	SignIn(ctx context.Context, req *domain.SignInRequest) (*domain.SignInResponse, error)
 	SignUp(ctx context.Context, req *domain.SignUpRequest) error
+	GetAuthContextByUserID(ctx context.Context, id int64) (*domain.AuthContext, error)
 }
 
 func (h HttpHandler) SignIn(w http.ResponseWriter, r *http.Request) {

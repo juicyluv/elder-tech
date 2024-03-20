@@ -1,6 +1,10 @@
 package domain
 
-import "diplom-backend/internal/domain/validations"
+type AuthContext struct {
+	ID   int64
+	Type int16
+	Name string
+}
 
 type SignUpRequest struct {
 	Name     string
@@ -13,15 +17,6 @@ type SignUpRequest struct {
 }
 
 func (r SignUpRequest) Validate() error {
-	if err := validations.ValidatePhone(r.Phone); err != nil {
-		return err
-	}
-
-	if r.Email != nil {
-		if err := validations.ValidateEmail(*r.Email); err != nil {
-			return err
-		}
-	}
 
 	return nil
 }
@@ -36,9 +31,6 @@ type SignInRequest struct {
 }
 
 func (r SignInRequest) Validate() error {
-	if err := validations.ValidatePhone(r.Phone); err != nil {
-		return err
-	}
 	return nil
 }
 

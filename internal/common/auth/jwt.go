@@ -13,6 +13,7 @@ var (
 
 type Claims struct {
 	ID   int64  `json:"id"`
+	Type int16  `json:"type"`
 	Name string `json:"name"`
 }
 
@@ -34,8 +35,10 @@ func ValidateJWT(tokenString string) (Claims, error) {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		id := claims["id"].(int64)
 		name := claims["id"].(string)
+		typ := claims["type"].(int16)
 		return Claims{
 			ID:   id,
+			Type: typ,
 			Name: name,
 		}, nil
 	} else {

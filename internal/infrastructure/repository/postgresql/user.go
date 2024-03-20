@@ -5,20 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"diplom-backend/internal/domain"
 )
 
-type UserRepository struct {
-	db *pgxpool.Pool
-}
-
-func NewUserRepository(db *pgxpool.Pool) *UserRepository {
-	return &UserRepository{db: db}
-}
-
-func (r *UserRepository) GetUser(ctx context.Context, id int64) (*domain.User, error) {
+func (r *Repository) GetUser(ctx context.Context, id int64) (*domain.User, error) {
 	var u domain.User
 
 	err := r.db.QueryRow(ctx, `
@@ -54,7 +44,7 @@ func (r *UserRepository) GetUser(ctx context.Context, id int64) (*domain.User, e
 	return &u, nil
 }
 
-func (r *UserRepository) UpdateUser(ctx context.Context, user *domain.User) error {
+func (r *Repository) UpdateUser(ctx context.Context, user *domain.User) error {
 	args := []any{user.ID}
 	var fields []string
 	argID := 2
@@ -107,6 +97,60 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user *domain.User) erro
 	)
 	if err != nil {
 		return parseError(err, "updating user")
+	}
+
+	return nil
+}
+
+func (r *Repository) CheckPhoneUnique(ctx context.Context, phone string) error {
+	var v int
+
+	err := r.db.QueryRow(ctx, `
+		select 1
+		from users
+		where phone = $1`, phone,
+	).Scan(&v)
+	if err != nil {
+		return parseError(err, "selecting phone")
+	}
+
+	return nil
+}
+
+func (r *Repository) CheckEmailUnique(ctx context.Context, email string) error {
+	var v int
+
+	err := r.db.QueryRow(ctx, `
+		select 1
+		from users
+		where email = $1`, email,
+	).Scan(&v)
+	if err != nil {
+		return parseError(err, "selecting email")
+	}
+
+	return nil
+}
+
+func (r *Repository) CreateUser(ctx context.Context, user *domain.User) error {
+	_, err := r.db.Exec(ctx, `
+		INSERT INTO users(name, type, surname, patronymic, age, gender, image_id, phone, email, last_online, created_at, password_enc)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+		user.Name,
+		user.Type,
+		user.Surname,
+		user.Patronymic,
+		user.Age,
+		user.Gender,
+		user.ImageID,
+		user.Phone,
+		user.Email,
+		user.LastOnline,
+		user.CreatedAt,
+		user.PasswordEncrypted,
+	)
+	if err != nil {
+		return parseError(err, "inserting user")
 	}
 
 	return nil

@@ -2,17 +2,34 @@ package domain
 
 import (
 	"fmt"
+	"regexp"
 	"time"
+	"unicode/utf8"
 
 	"golang.org/x/crypto/bcrypt"
 
-	"diplom-backend/internal/domain/vo"
+	"diplom-backend/internal/common/errors"
+)
+
+var (
+	phoneRegexp = regexp.MustCompile("^[+]?[(]?[0-9]{3}[)]?[-\\s.]?[0-9]{3}[-\\s.]?[0-9]{4,6}$")
+	emailRegexp = regexp.MustCompile("[^@ \\t\\r\\n]+@[^@ \\t\\r\\n]+\\.[^@ \\t\\r\\n]+")
+
+	UserTypes = map[int16]string{
+		UserTypeStudent: "Ученик",
+		UserTypeTeacher: "Преподаватель",
+	}
+)
+
+const (
+	UserTypeStudent int16 = iota + 1
+	UserTypeTeacher
 )
 
 type User struct {
 	ID                int64
 	Name              string
-	Phone             vo.Phone
+	Phone             string
 	Type              int16
 	PasswordEncrypted string
 	CreatedAt         time.Time
@@ -21,12 +38,27 @@ type User struct {
 	Patronymic *string
 	Age        *int16
 	Gender     *int16
-	Email      *vo.Email
+	Email      *string
 	ImageID    *int64
 	LastOnline *time.Time
 }
 
 func (u *User) Validate() error {
+	if u.Name == "" {
+		return errors.NewInvalidInputError("Имя не может быть пустым.", "name")
+	}
+	if utf8.RuneCountInString(u.Name) > 30 {
+		return errors.NewInvalidInputError("Имя слишком длинное.", "name")
+	}
+
+	if !phoneRegexp.MatchString(u.Phone) {
+		return errors.NewInvalidInputError("Неправильный формат телефона.", "phone")
+	}
+
+	if _, ok := UserTypes[u.Type]; !ok {
+		return errors.NewInvalidInputError("Неправильный тип пользователя.", "type")
+	}
+
 	return nil
 }
 

@@ -17,6 +17,7 @@ type AuthRepository interface {
 	CheckPhoneUnique(ctx context.Context, phone string) error
 	CheckEmailUnique(ctx context.Context, email string) error
 	CreateUser(ctx context.Context, user *domain.User) error
+	GetAuthContextByUserID(ctx context.Context, id int64) (*domain.AuthContext, error)
 }
 
 type AuthUseCase struct {
@@ -27,10 +28,10 @@ func NewAuthUseCase(authRepo AuthRepository) *AuthUseCase {
 	return &AuthUseCase{authRepo: authRepo}
 }
 
-func (u *AuthUseCase) SignIn(ctx context.Context, req *domain.SignInRequest) (*domain.SignInResponse, error) {
+func (uc *AuthUseCase) SignIn(ctx context.Context, req *domain.SignInRequest) (*domain.SignInResponse, error) {
 	// todo: validate
 
-	user, err := u.authRepo.GetUserByPhone(ctx, req.Phone)
+	user, err := uc.authRepo.GetUserByPhone(ctx, req.Phone)
 	if err != nil && !stderrors.Is(err, repository.ErrNotFound) {
 		return nil, fmt.Errorf("getting user by phone: %w", err)
 	}
@@ -57,10 +58,10 @@ func (u *AuthUseCase) SignIn(ctx context.Context, req *domain.SignInRequest) (*d
 	}, nil
 }
 
-func (u *AuthUseCase) SignUp(ctx context.Context, req *domain.SignUpRequest) error {
+func (uc *AuthUseCase) SignUp(ctx context.Context, req *domain.SignUpRequest) error {
 	// todo: validate
 
-	err := u.authRepo.CheckPhoneUnique(ctx, req.Phone)
+	err := uc.authRepo.CheckPhoneUnique(ctx, req.Phone)
 	if err != nil && !stderrors.Is(err, repository.ErrNotFound) {
 		return fmt.Errorf("checking phone unique: %w", err)
 	}
@@ -69,7 +70,7 @@ func (u *AuthUseCase) SignUp(ctx context.Context, req *domain.SignUpRequest) err
 	}
 
 	if req.Email != nil {
-		err = u.authRepo.CheckEmailUnique(ctx, *req.Email)
+		err = uc.authRepo.CheckEmailUnique(ctx, *req.Email)
 		if err != nil && !stderrors.Is(err, repository.ErrNotFound) {
 			return fmt.Errorf("checking email unique: %w", err)
 		}
@@ -91,9 +92,21 @@ func (u *AuthUseCase) SignUp(ctx context.Context, req *domain.SignUpRequest) err
 		return fmt.Errorf("encrypting password: %w", err)
 	}
 
-	if err = u.authRepo.CreateUser(ctx, &user); err != nil {
+	if err = uc.authRepo.CreateUser(ctx, &user); err != nil {
 		return fmt.Errorf("creating user: %w", err)
 	}
 
 	return nil
+}
+
+func (uc *AuthUseCase) GetAuthContextByUserID(ctx context.Context, id int64) (*domain.AuthContext, error) {
+	authContext, err := uc.authRepo.GetAuthContextByUserID(ctx, id)
+	if err != nil {
+		if stderrors.Is(err, repository.ErrNotFound) {
+			return nil, errors.NewAuthError("Пользователь не авторизован.", "token")
+		}
+		return nil, fmt.Errorf("getting user %d: %w", id, err)
+	}
+
+	return authContext, nil
 }
