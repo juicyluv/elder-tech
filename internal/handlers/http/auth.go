@@ -38,7 +38,6 @@ func (h HttpHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 		Patronymic: response.Patronymic,
 		Surname:    response.Surname,
 		Token:      response.Token,
-		Type:       response.Type,
 	})
 }
 
@@ -53,7 +52,6 @@ func (h HttpHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		Name:     req.Name,
 		Phone:    req.Phone,
 		Password: req.Password,
-		Type:     req.Type,
 		Surname:  req.Surname,
 		Email:    req.Email,
 	})

@@ -1,14 +1,11 @@
 openapi: '3.0.0'
 info:
   version: "1.0.0"
-  title: "Dyplom"
+  title: "ElderTech"
   license:
     name: "MIT"
 servers:
-  - url: http://{hostname}/api/v1
-    variables:
-      hostname:
-        default: localhost
+  - url: /api/v1
 security:
   - bearerAuth: [ ]
 paths:
@@ -180,6 +177,8 @@ paths:
     get:
       operationId: GetCourseMembers
       description: Получить пользователей курса
+      tags:
+        - Courses
       responses:
         200:
           description: OK
@@ -201,6 +200,8 @@ paths:
     post:
       operationId: AddCourseMembers
       description: Добавить курс пользователю
+      tags:
+        - Courses
       responses:
         200:
           description: OK
@@ -258,7 +259,6 @@ paths:
                 - name
                 - phone
                 - password
-                - type
               properties:
                 name:
                   type: string
@@ -270,9 +270,6 @@ paths:
                   type: string
                 password:
                   type: string
-                type:
-                  type: integer
-                  format: int16
       responses:
         400:
           description: Invalid input
@@ -424,7 +421,6 @@ components:
         - name
         - phone
         - created_at
-        - type
       properties:
         id:
           type: integer
@@ -435,9 +431,6 @@ components:
           type: string
         patronymic:
           type: string
-        type:
-          type: integer
-          format: int16
         age:
           type: integer
           format: int16
@@ -477,9 +470,6 @@ components:
           format: int64
         name:
           type: string
-        type:
-          type: integer
-          format: int16
         surname:
           type: string
         patronymic:

@@ -11,7 +11,6 @@ func (r *Repository) GetUserByPhone(ctx context.Context, phone string) (*domain.
 
 	err := r.db.QueryRow(ctx, `
 		select id,
-		       type,
 		       name,
 		       surname,
 		       patronymic,
@@ -19,7 +18,6 @@ func (r *Repository) GetUserByPhone(ctx context.Context, phone string) (*domain.
 		from users
 		where phone = $1`, phone).Scan(
 		&user.ID,
-		&user.Type,
 		&user.Name,
 		&user.Surname,
 		&user.Patronymic,
@@ -36,10 +34,10 @@ func (r *Repository) GetAuthContextByUserID(ctx context.Context, id int64) (*dom
 	ac := domain.AuthContext{ID: id}
 
 	err := r.db.QueryRow(ctx, `
-		select name, type
+		select id, name
 		from users
 		where id=$1`, id,
-	).Scan(&ac.ID)
+	).Scan(&ac.ID, &ac.Name)
 	if err != nil {
 		return nil, parseError(err, "selecting email")
 	}

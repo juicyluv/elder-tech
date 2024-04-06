@@ -52,7 +52,6 @@ func (uc *AuthUseCase) SignIn(ctx context.Context, req *domain.SignInRequest) (*
 		Token:      token,
 		ID:         user.ID,
 		Name:       user.Name,
-		Type:       user.Type,
 		Surname:    user.Surname,
 		Patronymic: user.Patronymic,
 	}, nil
@@ -82,7 +81,6 @@ func (uc *AuthUseCase) SignUp(ctx context.Context, req *domain.SignUpRequest) er
 	user := domain.User{
 		Name:              req.Name,
 		Phone:             req.Phone,
-		Type:              req.Type,
 		PasswordEncrypted: req.Password,
 		CreatedAt:         time.Now(),
 		Surname:           req.Surname,

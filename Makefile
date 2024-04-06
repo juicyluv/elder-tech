@@ -8,3 +8,7 @@ openapi_http:
 .PHONY: run
 run:
 	go run cmd/app/main.go
+
+.PHONY: mcreate
+mcreate:
+	migrate create -ext sql -dir migrations -seq $(name)

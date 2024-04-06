@@ -134,10 +134,9 @@ func (r *Repository) CheckEmailUnique(ctx context.Context, email string) error {
 
 func (r *Repository) CreateUser(ctx context.Context, user *domain.User) error {
 	_, err := r.db.Exec(ctx, `
-		INSERT INTO users(name, type, surname, patronymic, age, gender, image_id, phone, email, last_online, created_at, password_enc)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+		INSERT INTO users(name, surname, patronymic, age, gender, image_id, phone, email, last_online, created_at, password_enc)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
 		user.Name,
-		user.Type,
 		user.Surname,
 		user.Patronymic,
 		user.Age,
