@@ -26,7 +26,7 @@ type Course struct {
 	ForWho              string    `json:"for_who"`
 	Id                  int32     `json:"id"`
 	Progress            *float32  `json:"progress,omitempty"`
-	Rating              float32   `json:"rating"`
+	Rating              *float32  `json:"rating,omitempty"`
 	Requirements        string    `json:"requirements"`
 	TimeToCompleteHours int16     `json:"time_to_complete_hours"`
 	Title               string    `json:"title"`

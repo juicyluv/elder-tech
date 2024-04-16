@@ -33,14 +33,7 @@ func NewCourseUseCase(courseRepository CourseRepository) *CourseUseCase {
 }
 
 func (uc *CourseUseCase) CreateCourse(ctx context.Context, course *domain.Course) (int32, error) {
-	//user, err := uc.courseRepository.GetUser(ctx, course.AuthorID)
-	//if err != nil {
-	//	if stderrors.Is(err, repository.ErrNotFound) {
-	//		return 0, errors.NewNotFoundError("author not found", "author")
-	//	}
-	//	return 0, fmt.Errorf("getting user %d: %w", course.AuthorID, err)
-	//}
-
+	// TODO: get user from ctx
 	id, err := uc.courseRepository.CreateCourse(ctx, course)
 	if err != nil {
 		return 0, fmt.Errorf("creating course: %w", err)

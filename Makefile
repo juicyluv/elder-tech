@@ -12,3 +12,11 @@ run:
 .PHONY: mcreate
 mcreate:
 	migrate create -ext sql -dir migrations -seq $(name)
+
+.PHONY: mdrop
+mdrop:
+	go run cmd/migrate/drop.go
+
+.PHONY: sqlc
+sqlc:
+	PGPASSWORD=postgres psql -U postgres -d elder -h localhost -f query.sql

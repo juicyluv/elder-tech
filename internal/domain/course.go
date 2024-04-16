@@ -17,13 +17,26 @@ type Course struct {
 	CreatedAt time.Time
 	UpdatedAt *time.Time
 
-	Rating   float32
+	Rating   *float32
 	Progress *float32
 
 	CoverImage        *string
 	CoverImageContent []byte
 
 	Categories []CourseCategory
+
+	AuthorName       string
+	AuthorSurname    string
+	AuthorPatronymic string
+}
+
+func (c *Course) CalculateRating(ratingSum, ratingCount *int) {
+	if ratingCount == nil && ratingSum == nil {
+		return
+	}
+
+	rating := float32(*ratingSum) / float32(*ratingCount)
+	c.Rating = &rating
 }
 
 type CourseCategory struct {

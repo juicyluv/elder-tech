@@ -10,17 +10,20 @@ import (
 )
 
 type HttpHandler struct {
-	userUseCase UserUseCase
-	authUseCase AuthUseCase
+	userUseCase   UserUseCase
+	authUseCase   AuthUseCase
+	courseUseCase CourseUseCase
 }
 
 func NewHandler(
 	userUseCase UserUseCase,
 	authUseCase AuthUseCase,
+	courseUseCase CourseUseCase,
 ) *HttpHandler {
 	return &HttpHandler{
-		userUseCase: userUseCase,
-		authUseCase: authUseCase,
+		userUseCase:   userUseCase,
+		authUseCase:   authUseCase,
+		courseUseCase: courseUseCase,
 	}
 }
 

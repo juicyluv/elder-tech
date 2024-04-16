@@ -47,16 +47,17 @@ func (a *App) Run(ctx context.Context) error {
 
 	userUseCase := usecase.NewUseCase(repo)
 	authUseCase := usecase.NewAuthUseCase(repo)
+	courseUseCase := usecase.NewCourseUseCase(repo)
 
 	handler := http.NewHandler(
 		userUseCase,
 		authUseCase,
+		courseUseCase,
 	)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use()
 
 	r.Get("/docs/http", handler.DocsFile)
 	r.Get("/docs", handler.DocsPage)
