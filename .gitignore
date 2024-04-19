@@ -1,4 +1,6 @@
-.idea
 config/config.yaml
 /images
 /bin
+/app
+/.DS_Store
+/.idea
