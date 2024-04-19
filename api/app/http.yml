@@ -74,7 +74,7 @@ paths:
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
               required:
@@ -85,9 +85,6 @@ paths:
                   type: string
                 description:
                   type: string
-                cover:
-                  type: string
-                  format: binary
       responses:
         200:
           description: OK
@@ -173,7 +170,7 @@ paths:
         required: true
         schema:
           type: integer
-          format: int64
+          format: int32
     get:
       operationId: GetCourseMembers
       description: Получить пользователей курса
@@ -348,6 +345,65 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /users/{id}/image:
+    parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+    patch:
+      tags:
+        - Users
+      operationId: UpdateUserImage
+      description: Update user image
+      requestBody:
+        description: Request body
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        404:
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        200:
+          description: OK
+
+  /images/{id}:
+    get:
+      operationId: GetImage
+      summary: Get image content by ID
+      description: Retrieve the image content using its ID.
+      parameters:
+        - name: id
+          in: path
+          description: ID картинки
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        200:
+          description: OK
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        404:
+          description: Image not found
+        500:
+          description: Internal server error
 
 components:
   schemas:

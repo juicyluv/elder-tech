@@ -2,13 +2,14 @@ package filesystem
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
-
-	"diplom-backend/internal/infrastructure/repository"
 )
+
+var ErrNotFound = errors.New("file not found")
 
 type FileSystem struct {
 	dir string
@@ -56,7 +57,7 @@ func (fs *FileSystem) Read(_ context.Context, fileName string) ([]byte, error) {
 
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
-		return nil, repository.ErrNotFound
+		return nil, ErrNotFound
 	}
 
 	data, err := os.ReadFile(filePath)
@@ -72,7 +73,7 @@ func (fs *FileSystem) Delete(_ context.Context, fileName string) error {
 
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
-		return repository.ErrNotFound
+		return ErrNotFound
 	}
 
 	err = os.Remove(filePath)

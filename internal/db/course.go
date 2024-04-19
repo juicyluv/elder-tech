@@ -1,21 +1,18 @@
-package postgresql
+package db
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"time"
 
 	"diplom-backend/internal/domain"
-	"diplom-backend/internal/infrastructure/repository"
-
-	"github.com/jackc/pgx/v5"
 )
 
-func (r *Repository) GetCourse(ctx context.Context, id int32) (*domain.Course, error) {
+func GetCourse(ctx context.Context, id int32) (*domain.Course, error) {
 	var course domain.Course
 	var ratingCount, ratingSum *int
 
-	err := r.db.QueryRow(ctx, `
+	err := db.QueryRow(ctx, `
 SELECT c.id,
        c.title,
        c.description,
@@ -64,10 +61,6 @@ WHERE c.id=$1`, id).Scan(
 		&ratingSum,
 	)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, repository.ErrNotFound
-		}
-
 		return nil, fmt.Errorf("selecting course: %w", err)
 	}
 
@@ -76,8 +69,8 @@ WHERE c.id=$1`, id).Scan(
 	return &course, nil
 }
 
-func (r *Repository) GetAuthorCourses(ctx context.Context, userID int64) ([]domain.Course, error) {
-	rows, err := r.db.Query(ctx, `
+func GetAuthorCourses(ctx context.Context, userID int64) ([]domain.Course, error) {
+	rows, err := db.Query(ctx, `
 SELECT c.id,
        c.title,
        c.description,
@@ -139,8 +132,8 @@ WHERE c.author_id = $1`, userID)
 	return courses, nil
 }
 
-func (r *Repository) GetUserCourses(ctx context.Context, userID int64) ([]domain.Course, error) {
-	rows, err := r.db.Query(ctx, `
+func GetUserCourses(ctx context.Context, userID int64) ([]domain.Course, error) {
+	rows, err := db.Query(ctx, `
 SELECT c.id,
        c.title,
        c.description,
@@ -162,7 +155,7 @@ FROM courses c
 JOIN
     (SELECT course_id
      FROM course_members
-     WHERE user_id = $1 ) mem ON mem.course_id = c.id
+     WHERE user_id = $1) mem ON mem.course_id = c.id
 JOIN users u ON u.id=c.author_id
 LEFT JOIN
     (SELECT course_id,
@@ -213,22 +206,108 @@ LEFT JOIN
 	return courses, nil
 }
 
-func (r *Repository) CreateCourse(ctx context.Context, course *domain.Course) (int32, error) {
-	return 0, nil
+func CreateCourse(ctx context.Context, course *domain.Course) (int32, error) {
+	var id int32
+
+	err := db.QueryRow(ctx, `
+INSERT INTO courses(title, description, difficulty, time_to_complete_minutes, about, for_who, requirements, created_at, updated_at, cover_image, author_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+RETURNING id`,
+		course.Title,
+		course.Description,
+		course.Difficulty,
+		course.TimeToCompleteMinutes,
+		course.About,
+		course.ForWho,
+		course.Requirements,
+		time.Now(),
+		time.Now(),
+		course.CoverImage,
+		course.AuthorID,
+	).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("inserting course: %w", err)
+	}
+
+	return id, nil
 }
 
-func (r *Repository) UpdateCourse(ctx context.Context, course *domain.Course) error {
+func UpdateCourse(ctx context.Context, course *domain.Course) error {
 	return nil
 }
 
-func (r *Repository) DeleteCourse(ctx context.Context, id int32) error {
+func DeleteCourse(ctx context.Context, id int32) error {
+	_, err := db.Exec(ctx, `DELETE FROM courses WHERE id=$1`, id)
+	if err != nil {
+		return fmt.Errorf("deleting course: %w", err)
+	}
+
 	return nil
 }
 
-func (r *Repository) GetCourseMembers(ctx context.Context, id int32) ([]domain.User, error) {
-	return nil, nil
+func GetCourseMembers(ctx context.Context, id int32) ([]domain.User, error) {
+	rows, err := db.Query(ctx, `
+SELECT
+    u.id,
+    u.name,
+    u.surname,
+    u.patronymic,
+    u.image_id,
+    u.last_online
+FROM course_members cm
+JOIN users u ON u.id = cm.user_id
+WHERE cm.course_id = $1`, id)
+	if err != nil {
+		return nil, fmt.Errorf("selecting course members: %w", err)
+	}
+	defer rows.Close()
+
+	members := make([]domain.User, 0, 20)
+	for rows.Next() {
+		var user domain.User
+
+		err = rows.Scan(
+			&user.ID,
+			&user.Name,
+			&user.Surname,
+			&user.Patronymic,
+			&user.ImageID,
+			&user.LastOnline,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scanning course member: %w", err)
+		}
+
+		members = append(members, user)
+	}
+
+	return members, nil
 }
 
-func (r *Repository) AddCourseMember(ctx context.Context, courseID int32, userID int64) error {
+func AddCourseMember(ctx context.Context, courseID int32, userID int64) error {
+	_, err := db.Exec(ctx, `
+INSERT INTO course_members(course_id, user_id)
+VALUES ($1, $2)`,
+		courseID,
+		userID,
+	)
+	if err != nil {
+		return fmt.Errorf("inserting course member: %w", err)
+	}
+
+	return nil
+}
+
+func RemoveCourseMember(ctx context.Context, courseID int32, userID int64) error {
+	_, err := db.Exec(ctx, `
+DELETE FROM course_members
+WHERE course_id = $1 AND user_id = $2`,
+		courseID,
+		userID,
+	)
+	if err != nil {
+		return fmt.Errorf("deleting course member: %w", err)
+	}
+
 	return nil
 }

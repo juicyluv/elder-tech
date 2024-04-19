@@ -1,6 +1,7 @@
-package http
+package handlers
 
 import (
+	"diplom-backend/internal/db"
 	"log/slog"
 	"net/http"
 	"os"
@@ -50,4 +51,21 @@ func (h HttpHandler) Static(w http.ResponseWriter, r *http.Request) {
 	filename := strings.TrimPrefix(r.URL.Path, "/static/")
 
 	http.ServeFile(w, r, path.Join("web", "static", filename))
+}
+
+func (h HttpHandler) GetImage(w http.ResponseWriter, r *http.Request, id int64) {
+	image, err := db.GetImage(r.Context(), id)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	data, err := h.imageFileSys.Read(r.Context(), image.Filename)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }

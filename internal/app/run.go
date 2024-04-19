@@ -17,20 +17,22 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"diplom-backend/internal/common/config"
-	"diplom-backend/internal/handlers/http"
-	"diplom-backend/internal/infrastructure/repository/postgresql"
-	"diplom-backend/internal/usecase"
+	"diplom-backend/internal/db"
+	"diplom-backend/internal/filesystem"
+	"diplom-backend/internal/handlers"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func (a *App) Run(ctx context.Context) error {
-	db, err := pgxpool.New(ctx, config.DatabaseURL())
+	pool, err := pgxpool.New(ctx, config.DatabaseURL())
 	if err != nil {
 		return fmt.Errorf("creating pgxpool: %w", err)
 	}
-	if err = db.Ping(ctx); err != nil {
+	defer pool.Close()
+
+	if err = pool.Ping(ctx); err != nil {
 		return fmt.Errorf("pinging database: %w", err)
 	}
 	slog.Info("Connected to database")
@@ -43,16 +45,15 @@ func (a *App) Run(ctx context.Context) error {
 		return fmt.Errorf("applying migrations: %w", err)
 	}
 
-	repo := postgresql.NewRepository(db)
+	db.Init(pool)
 
-	userUseCase := usecase.NewUseCase(repo)
-	authUseCase := usecase.NewAuthUseCase(repo)
-	courseUseCase := usecase.NewCourseUseCase(repo)
+	imageFileSys, err := filesystem.New("images")
+	if err != nil {
+		return fmt.Errorf("creating images fs")
+	}
 
-	handler := http.NewHandler(
-		userUseCase,
-		authUseCase,
-		courseUseCase,
+	handler := handlers.NewHandler(
+		imageFileSys,
 	)
 
 	r := chi.NewRouter()
@@ -65,7 +66,7 @@ func (a *App) Run(ctx context.Context) error {
 
 	a.httpServer = &stdhttp.Server{
 		Addr:    fmt.Sprintf(":%d", config.HttpPort()),
-		Handler: http.HandlerFromMuxWithBaseURL(handler, r, "/api/v1"),
+		Handler: handlers.HandlerFromMuxWithBaseURL(handler, r, "/api/v1"),
 	}
 
 	httpServerCh := make(chan error)
@@ -96,7 +97,6 @@ func (a *App) Run(ctx context.Context) error {
 	if err != nil {
 		slog.Error("failed to shutdown the server: " + err.Error())
 	}
-	db.Close()
 	slog.Info("Server has been shut down successfully")
 
 	return nil

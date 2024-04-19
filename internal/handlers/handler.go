@@ -1,4 +1,4 @@
-package http
+package handlers
 
 import (
 	stderrors "errors"
@@ -7,23 +7,18 @@ import (
 	"github.com/go-chi/render"
 
 	"diplom-backend/internal/common/errors"
+	"diplom-backend/internal/filesystem"
 )
 
 type HttpHandler struct {
-	userUseCase   UserUseCase
-	authUseCase   AuthUseCase
-	courseUseCase CourseUseCase
+	imageFileSys *filesystem.FileSystem
 }
 
 func NewHandler(
-	userUseCase UserUseCase,
-	authUseCase AuthUseCase,
-	courseUseCase CourseUseCase,
+	imageFileSys *filesystem.FileSystem,
 ) *HttpHandler {
 	return &HttpHandler{
-		userUseCase:   userUseCase,
-		authUseCase:   authUseCase,
-		courseUseCase: courseUseCase,
+		imageFileSys: imageFileSys,
 	}
 }
 
