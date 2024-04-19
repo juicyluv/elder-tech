@@ -4,6 +4,7 @@ import (
 	stderrors "errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"diplom-backend/internal/common/auth"
 	"diplom-backend/internal/common/errors"
@@ -15,7 +16,7 @@ import (
 )
 
 func FromDomainCourseToCourse(course *domain.Course) *Course {
-	return &Course{
+	c := &Course{
 		About:               course.About,
 		AuthorId:            course.AuthorID,
 		CoverImage:          course.CoverImage,
@@ -30,7 +31,24 @@ func FromDomainCourseToCourse(course *domain.Course) *Course {
 		TimeToCompleteHours: course.TimeToCompleteMinutes,
 		Title:               course.Title,
 		UpdatedAt:           course.UpdatedAt,
+		Categories:          course.Categories,
 	}
+
+	if len(course.Blocks) != 0 {
+		blocks := make([]CourseBlock, 0, len(course.Blocks))
+		for _, block := range course.Blocks {
+			blocks = append(blocks, CourseBlock{
+				CourseId:    block.CourseID,
+				Description: block.Description,
+				Id:          block.ID,
+				Number:      block.Number,
+				Title:       block.Description,
+			})
+		}
+		c.CourseBlocks = &blocks
+	}
+
+	return c
 }
 
 func (h HttpHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
@@ -40,12 +58,33 @@ func (h HttpHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// id, err := db.CreateCourse(r.Context(), course)
-	// if err != nil {
-	// 	return 0, fmt.Errorf("creating course: %w", err)
-	// }
+	user, err := auth.GetAuthContextFromContext(r.Context())
+	if err != nil {
+		ErrorResponse(w, r, err)
+		return
+	}
 
-	// return id, nil
+	id, err := db.CreateCourse(r.Context(), &domain.Course{
+		AuthorID:              user.ID,
+		Title:                 req.Title,
+		Description:           req.Description,
+		Difficulty:            req.Difficulty,
+		TimeToCompleteMinutes: req.TimeToCompleteMinutes,
+		About:                 req.About,
+		ForWho:                req.ForWho,
+		Requirements:          req.Requirements,
+		CreatedAt:             time.Now(),
+		Categories:            req.Categories,
+	})
+	if err != nil {
+		ErrorResponse(w, r, fmt.Errorf("creating course: %w", err))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	render.JSON(w, r, map[string]any{
+		"id": id,
+	})
 }
 
 func (h HttpHandler) GetAuthorCourses(w http.ResponseWriter, r *http.Request, id int64) {
@@ -190,4 +229,25 @@ func (h HttpHandler) AddCourseMembers(w http.ResponseWriter, r *http.Request, id
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h HttpHandler) GetCourseCategories(w http.ResponseWriter, r *http.Request) {
+	categories, err := db.GetCourseCategories(r.Context())
+	if err != nil {
+		ErrorResponse(w, r, fmt.Errorf("getting course categores: %w", err))
+		return
+	}
+
+	responseCategories := make([]CourseCategory, 0, len(categories))
+	for _, c := range categories {
+		responseCategories = append(responseCategories, CourseCategory{
+			Id:   c.ID,
+			Name: c.Name,
+		})
+	}
+
+	w.WriteHeader(http.StatusOK)
+	render.JSON(w, r, map[string]any{
+		"categories": responseCategories,
+	})
 }

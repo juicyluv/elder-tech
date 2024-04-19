@@ -15,9 +15,11 @@ const (
 
 // Course Course
 type Course struct {
-	About      string  `json:"about"`
-	AuthorId   int64   `json:"author_id"`
-	CoverImage *string `json:"cover_image,omitempty"`
+	About        string         `json:"about"`
+	AuthorId     int64          `json:"author_id"`
+	Categories   []int16        `json:"categories"`
+	CourseBlocks *[]CourseBlock `json:"course_blocks,omitempty"`
+	CoverImage   *int64         `json:"cover_image,omitempty"`
 
 	// CreatedAt A timestamp representing a date and time in RFC3339 format
 	CreatedAt           Timestamp `json:"created_at"`
@@ -33,6 +35,21 @@ type Course struct {
 
 	// UpdatedAt A timestamp representing a date and time in RFC3339 format
 	UpdatedAt *Timestamp `json:"updated_at,omitempty"`
+}
+
+// CourseBlock defines model for CourseBlock.
+type CourseBlock struct {
+	CourseId    int32  `json:"course_id"`
+	Description string `json:"description"`
+	Id          int64  `json:"id"`
+	Number      int    `json:"number"`
+	Title       string `json:"title"`
+}
+
+// CourseCategory defines model for CourseCategory.
+type CourseCategory struct {
+	Id   int16  `json:"id"`
+	Name string `json:"name"`
 }
 
 // Error Error
@@ -89,8 +106,14 @@ type SignUpJSONBody struct {
 
 // CreateCourseJSONBody defines parameters for CreateCourse.
 type CreateCourseJSONBody struct {
-	Description string `json:"description"`
-	Title       string `json:"title"`
+	About                 string  `json:"about"`
+	Categories            []int16 `json:"categories"`
+	Description           string  `json:"description"`
+	Difficulty            int16   `json:"difficulty"`
+	ForWho                string  `json:"forWho"`
+	Requirements          string  `json:"requirements"`
+	TimeToCompleteMinutes int16   `json:"timeToCompleteMinutes"`
+	Title                 string  `json:"title"`
 }
 
 // UpdateUserJSONBody defines parameters for UpdateUser.
@@ -106,7 +129,7 @@ type UpdateUserJSONBody struct {
 
 // UpdateUserImageMultipartBody defines parameters for UpdateUserImage.
 type UpdateUserImageMultipartBody struct {
-	Image *openapi_types.File `json:"image,omitempty"`
+	File *openapi_types.File `json:"file,omitempty"`
 }
 
 // SignInJSONRequestBody defines body for SignIn for application/json ContentType.

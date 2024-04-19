@@ -6,13 +6,21 @@ import (
 	"time"
 
 	"diplom-backend/internal/domain"
+
+	"github.com/jackc/pgx/v5"
 )
 
 func GetCourse(ctx context.Context, id int32) (*domain.Course, error) {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("beginning tx")
+	}
+	defer tx.Rollback(context.Background())
+
 	var course domain.Course
 	var ratingCount, ratingSum *int
 
-	err := db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 SELECT c.id,
        c.title,
        c.description,
@@ -66,11 +74,31 @@ WHERE c.id=$1`, id).Scan(
 
 	course.CalculateRating(ratingSum, ratingCount)
 
+	course.Categories, err = getCourseCategoriesTx(ctx, tx, course.ID)
+	if err != nil {
+		return nil, fmt.Errorf("getting course categories: %w", err)
+	}
+
+	course.Blocks, err = getCourseBlocksTx(ctx, tx, course.ID)
+	if err != nil {
+		return nil, fmt.Errorf("getting course blocks: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("committing tx: %w", err)
+	}
+
 	return &course, nil
 }
 
 func GetAuthorCourses(ctx context.Context, userID int64) ([]domain.Course, error) {
-	rows, err := db.Query(ctx, `
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("beginning tx")
+	}
+	defer tx.Rollback(context.Background())
+
+	rows, err := tx.Query(ctx, `
 SELECT c.id,
        c.title,
        c.description,
@@ -126,13 +154,28 @@ WHERE c.author_id = $1`, userID)
 
 		course.CalculateRating(rating, ratingCount)
 
+		course.Categories, err = getCourseCategoriesTx(ctx, tx, course.ID)
+		if err != nil {
+			return nil, fmt.Errorf("getting course categories: %w", err)
+		}
+
 		courses = append(courses, course)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("committing tx: %w", err)
 	}
 
 	return courses, nil
 }
 
 func GetUserCourses(ctx context.Context, userID int64) ([]domain.Course, error) {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("beginning tx")
+	}
+	defer tx.Rollback(context.Background())
+
 	rows, err := db.Query(ctx, `
 SELECT c.id,
        c.title,
@@ -200,16 +243,30 @@ LEFT JOIN
 
 		course.CalculateRating(rating, ratingCount)
 
+		course.Categories, err = getCourseCategoriesTx(ctx, tx, course.ID)
+		if err != nil {
+			return nil, fmt.Errorf("getting course categories: %w", err)
+		}
+
 		courses = append(courses, course)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("committing tx: %w", err)
 	}
 
 	return courses, nil
 }
 
 func CreateCourse(ctx context.Context, course *domain.Course) (int32, error) {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("beginning tx: %w", err)
+	}
+	defer tx.Rollback(context.Background())
 	var id int32
 
-	err := db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 INSERT INTO courses(title, description, difficulty, time_to_complete_minutes, about, for_who, requirements, created_at, updated_at, cover_image, author_id)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING id`,
@@ -227,6 +284,17 @@ RETURNING id`,
 	).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("inserting course: %w", err)
+	}
+
+	for _, c := range course.Categories {
+		_, err = tx.Exec(ctx, "INSERT INTO courses_to_categories(course_id, course_category_id) VALUES ($1, $2)", id, c)
+		if err != nil {
+			return 0, fmt.Errorf("inserting categories: %w", err)
+		}
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return 0, fmt.Errorf("committing tx")
 	}
 
 	return id, nil
@@ -310,4 +378,71 @@ WHERE course_id = $1 AND user_id = $2`,
 	}
 
 	return nil
+}
+
+func GetCourseCategories(ctx context.Context) ([]domain.CourseCategory, error) {
+	rows, err := db.Query(ctx, "SELECT id, name FROM course_categories ORDER BY name")
+	if err != nil {
+		return nil, fmt.Errorf("selecting categories: %w", err)
+	}
+	defer rows.Close()
+
+	categories := make([]domain.CourseCategory, 0, 32)
+	var c domain.CourseCategory
+	for rows.Next() {
+		err = rows.Scan(&c.ID, &c.Name)
+		if err != nil {
+			return nil, fmt.Errorf("scanning category: %w", err)
+		}
+		categories = append(categories, c)
+	}
+
+	return categories, nil
+}
+
+func getCourseCategoriesTx(ctx context.Context, tx pgx.Tx, id int32) ([]int16, error) {
+	rows, err := tx.Query(ctx, "SELECT course_category_id FROM course_categories WHERE course_id=$1", id)
+	if err != nil {
+		return nil, fmt.Errorf("selecting course categories: %w", err)
+	}
+	defer rows.Close()
+
+	categories := make([]int16, 0, 8)
+	var category int16
+	for rows.Next() {
+		if err = rows.Scan(&category); err != nil {
+			return nil, fmt.Errorf("scanning category: %w", err)
+		}
+		categories = append(categories, category)
+	}
+
+	return categories, nil
+}
+
+func getCourseBlocksTx(ctx context.Context, tx pgx.Tx, id int32) ([]domain.CourseBlock, error) {
+	rows, err := tx.Query(ctx, `
+		SELECT id, course_id, number, title, description
+		FROM course_blocks
+		WHERE course_id=$1`, id)
+	if err != nil {
+		return nil, fmt.Errorf("selecting course blocks: %w", err)
+	}
+	defer rows.Close()
+
+	blocks := make([]domain.CourseBlock, 0, 8)
+	var block domain.CourseBlock
+	for rows.Next() {
+		if err = rows.Scan(
+			&block.ID,
+			&block.CourseID,
+			&block.Number,
+			&block.Title,
+			&block.Description,
+		); err != nil {
+			return nil, fmt.Errorf("scanning block: %w", err)
+		}
+		blocks = append(blocks, block)
+	}
+
+	return blocks, nil
 }

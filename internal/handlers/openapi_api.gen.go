@@ -27,6 +27,9 @@ type ServerInterface interface {
 	// (GET /courses/author/{id})
 	GetAuthorCourses(w http.ResponseWriter, r *http.Request, id int64)
 
+	// (GET /courses/categories)
+	GetCourseCategories(w http.ResponseWriter, r *http.Request)
+
 	// (GET /courses/user/{id})
 	GetUserCourses(w http.ResponseWriter, r *http.Request, id int64)
 
@@ -79,6 +82,11 @@ func (_ Unimplemented) CreateCourse(w http.ResponseWriter, r *http.Request) {
 
 // (GET /courses/author/{id})
 func (_ Unimplemented) GetAuthorCourses(w http.ResponseWriter, r *http.Request, id int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /courses/categories)
+func (_ Unimplemented) GetCourseCategories(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -212,6 +220,23 @@ func (siw *ServerInterfaceWrapper) GetAuthorCourses(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAuthorCourses(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetCourseCategories operation middleware
+func (siw *ServerInterfaceWrapper) GetCourseCategories(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCourseCategories(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -625,6 +650,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/courses/author/{id}", wrapper.GetAuthorCourses)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/courses/categories", wrapper.GetCourseCategories)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/courses/user/{id}", wrapper.GetUserCourses)

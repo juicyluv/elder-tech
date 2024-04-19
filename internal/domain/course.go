@@ -17,13 +17,12 @@ type Course struct {
 	CreatedAt time.Time
 	UpdatedAt *time.Time
 
-	Rating   *float32
-	Progress *float32
+	Rating     *float32
+	Progress   *float32
+	CoverImage *int64
 
-	CoverImage        *string
-	CoverImageContent []byte
-
-	Categories []CourseCategory
+	Categories []int16
+	Blocks     []CourseBlock
 
 	AuthorName       string
 	AuthorSurname    string
@@ -42,4 +41,12 @@ func (c *Course) CalculateRating(ratingSum, ratingCount *int) {
 type CourseCategory struct {
 	ID   int16
 	Name string
+}
+
+type CourseBlock struct {
+	ID          int64
+	CourseID    int32
+	Number      int
+	Title       string
+	Description string
 }
