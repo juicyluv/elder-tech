@@ -116,6 +116,9 @@ type CreateCourseJSONBody struct {
 	Title                 string  `json:"title"`
 }
 
+// AddCourseBlockJSONBody defines parameters for AddCourseBlock.
+type AddCourseBlockJSONBody interface{}
+
 // UpdateUserJSONBody defines parameters for UpdateUser.
 type UpdateUserJSONBody struct {
 	Age        *int16  `json:"age,omitempty"`
@@ -140,6 +143,9 @@ type SignUpJSONRequestBody SignUpJSONBody
 
 // CreateCourseJSONRequestBody defines body for CreateCourse for application/json ContentType.
 type CreateCourseJSONRequestBody CreateCourseJSONBody
+
+// AddCourseBlockJSONRequestBody defines body for AddCourseBlock for application/json ContentType.
+type AddCourseBlockJSONRequestBody AddCourseBlockJSONBody
 
 // UpdateUserJSONRequestBody defines body for UpdateUser for application/json ContentType.
 type UpdateUserJSONRequestBody UpdateUserJSONBody

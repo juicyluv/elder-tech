@@ -452,6 +452,54 @@ paths:
         500:
           description: Internal server error
 
+  /courses/{id}/blocks:
+    post:
+      operationId: AddCourseBlock
+      summary: Add course block
+      parameters:
+        - name: id
+          in: path
+          description: ID курса
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        content:
+          application/json:
+            type: object
+            required:
+              - course_id
+              - number
+              - title
+              - description
+            properties:
+              course_id:
+                type: integer
+                format: int32
+              number:
+                type: integer
+              title:
+                type: string
+              description:
+                type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              type: object
+              required:
+                - id
+              schema:
+                id:
+                  type: integer
+                  format: int64
+        404:
+          description: Course not found
+        500:
+          description: Internal server error
+
 components:
   schemas:
     Course:
