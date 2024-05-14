@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"diplom-backend/internal/domain"
-
-	"github.com/jackc/pgx/v5"
 )
 
 func GetCourse(ctx context.Context, id int32) (*domain.Course, error) {
@@ -74,12 +72,12 @@ WHERE c.id=$1`, id).Scan(
 
 	course.CalculateRating(ratingSum, ratingCount)
 
-	course.Categories, err = getCourseCategoriesTx(ctx, tx, course.ID)
+	course.Categories, err = getCourseCategories(ctx, course.ID)
 	if err != nil {
 		return nil, fmt.Errorf("getting course categories: %w", err)
 	}
 
-	course.Blocks, err = getCourseBlocksTx(ctx, tx, course.ID)
+	course.Blocks, err = getCourseBlocks(ctx, course.ID)
 	if err != nil {
 		return nil, fmt.Errorf("getting course blocks: %w", err)
 	}
@@ -99,28 +97,28 @@ func GetAuthorCourses(ctx context.Context, userID int64) ([]domain.Course, error
 	defer tx.Rollback(context.Background())
 
 	rows, err := tx.Query(ctx, `
-SELECT c.id,
-       c.title,
-       c.description,
-       c.difficulty,
-       c.time_to_complete_minutes,
-       c.about,
-       c.for_who,
-       c.requirements,
-       c.created_at,
-       c.updated_at,
-       c.cover_image,
-       c.author_id,
-       ratings.num,
-       ratings.rating
-FROM courses c
-LEFT JOIN
-    (SELECT course_id,
-            count(*) AS num,
-            sum(rating) AS rating
-     FROM course_ratings
-     GROUP BY course_id) ratings ON ratings.course_id = c.id
-WHERE c.author_id = $1`, userID)
+		SELECT c.id,
+			   c.title,
+			   c.description,
+			   c.difficulty,
+			   c.time_to_complete_minutes,
+			   c.about,
+			   c.for_who,
+			   c.requirements,
+			   c.created_at,
+			   c.updated_at,
+			   c.cover_image,
+			   c.author_id,
+			   ratings.num,
+			   ratings.rating
+		FROM courses c
+		LEFT JOIN
+			(SELECT course_id,
+					count(*) AS num,
+					sum(rating) AS rating
+			 FROM course_ratings
+			 GROUP BY course_id) ratings ON ratings.course_id = c.id
+		WHERE c.author_id = $1`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("selecting courses: %w", err)
 	}
@@ -154,16 +152,12 @@ WHERE c.author_id = $1`, userID)
 
 		course.CalculateRating(rating, ratingCount)
 
-		course.Categories, err = getCourseCategoriesTx(ctx, tx, course.ID)
+		course.Categories, err = getCourseCategories(ctx, course.ID)
 		if err != nil {
 			return nil, fmt.Errorf("getting course categories: %w", err)
 		}
 
 		courses = append(courses, course)
-	}
-
-	if err = tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("committing tx: %w", err)
 	}
 
 	return courses, nil
@@ -176,36 +170,36 @@ func GetUserCourses(ctx context.Context, userID int64) ([]domain.Course, error) 
 	}
 	defer tx.Rollback(context.Background())
 
-	rows, err := db.Query(ctx, `
-SELECT c.id,
-       c.title,
-       c.description,
-       c.difficulty,
-       c.time_to_complete_minutes,
-       c.about,
-       c.for_who,
-       c.requirements,
-       c.created_at,
-       c.updated_at,
-       c.cover_image,
-       ratings.num,
-       ratings.rating,
-       c.author_id,
-       u.name,
-       u.surname,
-       u.patronymic
-FROM courses c
-JOIN
-    (SELECT course_id
-     FROM course_members
-     WHERE user_id = $1) mem ON mem.course_id = c.id
-JOIN users u ON u.id=c.author_id
-LEFT JOIN
-    (SELECT course_id,
-            count(*) AS num,
-            sum(rating) AS rating
-     FROM course_ratings
-     GROUP BY course_id) ratings ON ratings.course_id = c.id`, userID)
+	rows, err := tx.Query(ctx, `
+		SELECT c.id,
+			   c.title,
+			   c.description,
+			   c.difficulty,
+			   c.time_to_complete_minutes,
+			   c.about,
+			   c.for_who,
+			   c.requirements,
+			   c.created_at,
+			   c.updated_at,
+			   c.cover_image,
+			   ratings.num,
+			   ratings.rating,
+			   c.author_id,
+			   u.name,
+			   u.surname,
+			   u.patronymic
+		FROM courses c
+		JOIN
+			(SELECT course_id
+			 FROM course_members
+			 WHERE user_id = $1) mem ON mem.course_id = c.id
+		JOIN users u ON u.id=c.author_id
+		LEFT JOIN
+			(SELECT course_id,
+					count(*) AS num,
+					sum(rating) AS rating
+			 FROM course_ratings
+			 GROUP BY course_id) ratings ON ratings.course_id = c.id`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("selecting courses: %w", err)
 	}
@@ -243,7 +237,7 @@ LEFT JOIN
 
 		course.CalculateRating(rating, ratingCount)
 
-		course.Categories, err = getCourseCategoriesTx(ctx, tx, course.ID)
+		course.Categories, err = getCourseCategories(ctx, course.ID)
 		if err != nil {
 			return nil, fmt.Errorf("getting course categories: %w", err)
 		}
@@ -267,9 +261,9 @@ func CreateCourse(ctx context.Context, course *domain.Course) (int32, error) {
 	var id int32
 
 	err = tx.QueryRow(ctx, `
-INSERT INTO courses(title, description, difficulty, time_to_complete_minutes, about, for_who, requirements, created_at, updated_at, cover_image, author_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-RETURNING id`,
+		INSERT INTO courses(title, description, difficulty, time_to_complete_minutes, about, for_who, requirements, created_at, updated_at, cover_image, author_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id`,
 		course.Title,
 		course.Description,
 		course.Difficulty,
@@ -315,16 +309,16 @@ func DeleteCourse(ctx context.Context, id int32) error {
 
 func GetCourseMembers(ctx context.Context, id int32) ([]domain.User, error) {
 	rows, err := db.Query(ctx, `
-SELECT
-    u.id,
-    u.name,
-    u.surname,
-    u.patronymic,
-    u.image_id,
-    u.last_online
-FROM course_members cm
-JOIN users u ON u.id = cm.user_id
-WHERE cm.course_id = $1`, id)
+		SELECT
+			u.id,
+			u.name,
+			u.surname,
+			u.patronymic,
+			u.image_id,
+			u.last_online
+		FROM course_members cm
+		JOIN users u ON u.id = cm.user_id
+		WHERE cm.course_id = $1`, id)
 	if err != nil {
 		return nil, fmt.Errorf("selecting course members: %w", err)
 	}
@@ -354,8 +348,8 @@ WHERE cm.course_id = $1`, id)
 
 func AddCourseMember(ctx context.Context, courseID int32, userID int64) error {
 	_, err := db.Exec(ctx, `
-INSERT INTO course_members(course_id, user_id)
-VALUES ($1, $2)`,
+		INSERT INTO course_members(course_id, user_id)
+		VALUES ($1, $2)`,
 		courseID,
 		userID,
 	)
@@ -368,8 +362,8 @@ VALUES ($1, $2)`,
 
 func RemoveCourseMember(ctx context.Context, courseID int32, userID int64) error {
 	_, err := db.Exec(ctx, `
-DELETE FROM course_members
-WHERE course_id = $1 AND user_id = $2`,
+		DELETE FROM course_members
+		WHERE course_id = $1 AND user_id = $2`,
 		courseID,
 		userID,
 	)
@@ -400,8 +394,8 @@ func GetCourseCategories(ctx context.Context) ([]domain.CourseCategory, error) {
 	return categories, nil
 }
 
-func getCourseCategoriesTx(ctx context.Context, tx pgx.Tx, id int32) ([]int16, error) {
-	rows, err := tx.Query(ctx, "SELECT course_category_id FROM course_categories WHERE course_id=$1", id)
+func getCourseCategories(ctx context.Context, id int32) ([]int16, error) {
+	rows, err := db.Query(ctx, "SELECT course_category_id FROM courses_to_categories WHERE course_id=$1", id)
 	if err != nil {
 		return nil, fmt.Errorf("selecting course categories: %w", err)
 	}
@@ -419,8 +413,8 @@ func getCourseCategoriesTx(ctx context.Context, tx pgx.Tx, id int32) ([]int16, e
 	return categories, nil
 }
 
-func getCourseBlocksTx(ctx context.Context, tx pgx.Tx, id int32) ([]domain.CourseBlock, error) {
-	rows, err := tx.Query(ctx, `
+func getCourseBlocks(ctx context.Context, id int32) ([]domain.CourseBlock, error) {
+	rows, err := db.Query(ctx, `
 		SELECT id, course_id, number, title, description
 		FROM course_blocks
 		WHERE course_id=$1`, id)

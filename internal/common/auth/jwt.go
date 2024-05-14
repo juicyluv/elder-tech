@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -15,33 +17,32 @@ type Claims struct {
 	ID   int64  `json:"id"`
 	Type int16  `json:"type"`
 	Name string `json:"name"`
+	jwt.StandardClaims
 }
 
 func GenerateJWT(claims Claims) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":   claims.ID,
-		"name": claims.Name,
-		"exp":  time.Now().Add(time.Hour * 24).Unix(), // Token expiration time
-	})
+	claims.StandardClaims.ExpiresAt = time.Now().Add(time.Hour * 24).Unix()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	return token.SignedString(secret)
 }
 
-func ValidateJWT(tokenString string) (Claims, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+func ValidateJWT(tokenString string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
 	})
-
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		id := claims["id"].(int64)
-		name := claims["id"].(string)
-		typ := claims["type"].(int16)
-		return Claims{
-			ID:   id,
-			Type: typ,
-			Name: name,
-		}, nil
-	} else {
-		return Claims{}, err
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token: %v", err)
 	}
+
+	if !token.Valid {
+		return nil, errors.New("token is not valid")
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return nil, fmt.Errorf("invalid claims format: expected *Claims, got %T", token.Claims)
+	}
+
+	return claims, nil
 }

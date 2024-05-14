@@ -45,11 +45,14 @@ type ServerInterface interface {
 	// (POST /courses/{id}/blocks)
 	AddCourseBlock(w http.ResponseWriter, r *http.Request, id int32)
 
+	// (POST /courses/{id}/join)
+	JoinCourse(w http.ResponseWriter, r *http.Request, id int32)
+
+	// (POST /courses/{id}/leave)
+	LeaveCourse(w http.ResponseWriter, r *http.Request, id int32)
+
 	// (GET /courses/{id}/members)
 	GetCourseMembers(w http.ResponseWriter, r *http.Request, id int32)
-
-	// (POST /courses/{id}/members)
-	AddCourseMembers(w http.ResponseWriter, r *http.Request, id int32)
 	// Get image content by ID
 	// (GET /images/{id})
 	GetImage(w http.ResponseWriter, r *http.Request, id int64)
@@ -119,13 +122,18 @@ func (_ Unimplemented) AddCourseBlock(w http.ResponseWriter, r *http.Request, id
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// (GET /courses/{id}/members)
-func (_ Unimplemented) GetCourseMembers(w http.ResponseWriter, r *http.Request, id int32) {
+// (POST /courses/{id}/join)
+func (_ Unimplemented) JoinCourse(w http.ResponseWriter, r *http.Request, id int32) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// (POST /courses/{id}/members)
-func (_ Unimplemented) AddCourseMembers(w http.ResponseWriter, r *http.Request, id int32) {
+// (POST /courses/{id}/leave)
+func (_ Unimplemented) LeaveCourse(w http.ResponseWriter, r *http.Request, id int32) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /courses/{id}/members)
+func (_ Unimplemented) GetCourseMembers(w http.ResponseWriter, r *http.Request, id int32) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -197,7 +205,7 @@ func (siw *ServerInterfaceWrapper) SignUp(w http.ResponseWriter, r *http.Request
 func (siw *ServerInterfaceWrapper) CreateCourse(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateCourse(w, r)
@@ -225,7 +233,7 @@ func (siw *ServerInterfaceWrapper) GetAuthorCourses(w http.ResponseWriter, r *ht
 		return
 	}
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAuthorCourses(w, r, id)
@@ -242,7 +250,7 @@ func (siw *ServerInterfaceWrapper) GetAuthorCourses(w http.ResponseWriter, r *ht
 func (siw *ServerInterfaceWrapper) GetCourseCategories(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCourseCategories(w, r)
@@ -270,7 +278,7 @@ func (siw *ServerInterfaceWrapper) GetUserCourses(w http.ResponseWriter, r *http
 		return
 	}
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetUserCourses(w, r, id)
@@ -298,7 +306,7 @@ func (siw *ServerInterfaceWrapper) DeleteCourse(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteCourse(w, r, id)
@@ -326,7 +334,7 @@ func (siw *ServerInterfaceWrapper) GetCourse(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCourse(w, r, id)
@@ -354,7 +362,7 @@ func (siw *ServerInterfaceWrapper) UpdateCourse(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateCourse(w, r, id)
@@ -382,10 +390,66 @@ func (siw *ServerInterfaceWrapper) AddCourseBlock(w http.ResponseWriter, r *http
 		return
 	}
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AddCourseBlock(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// JoinCourse operation middleware
+func (siw *ServerInterfaceWrapper) JoinCourse(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int32
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.JoinCourse(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// LeaveCourse operation middleware
+func (siw *ServerInterfaceWrapper) LeaveCourse(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int32
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.LeaveCourse(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -410,38 +474,10 @@ func (siw *ServerInterfaceWrapper) GetCourseMembers(w http.ResponseWriter, r *ht
 		return
 	}
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCourseMembers(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r.WithContext(ctx))
-}
-
-// AddCourseMembers operation middleware
-func (siw *ServerInterfaceWrapper) AddCourseMembers(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id int32
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.AddCourseMembers(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -466,7 +502,7 @@ func (siw *ServerInterfaceWrapper) GetImage(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetImage(w, r, id)
@@ -494,7 +530,7 @@ func (siw *ServerInterfaceWrapper) GetUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetUser(w, r, id)
@@ -522,7 +558,7 @@ func (siw *ServerInterfaceWrapper) UpdateUser(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateUser(w, r, id)
@@ -550,7 +586,7 @@ func (siw *ServerInterfaceWrapper) UpdateUserImage(w http.ResponseWriter, r *htt
 		return
 	}
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateUserImage(w, r, id)
@@ -707,10 +743,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/courses/{id}/blocks", wrapper.AddCourseBlock)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/courses/{id}/members", wrapper.GetCourseMembers)
+		r.Post(options.BaseURL+"/courses/{id}/join", wrapper.JoinCourse)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/courses/{id}/members", wrapper.AddCourseMembers)
+		r.Post(options.BaseURL+"/courses/{id}/leave", wrapper.LeaveCourse)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/courses/{id}/members", wrapper.GetCourseMembers)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/images/{id}", wrapper.GetImage)

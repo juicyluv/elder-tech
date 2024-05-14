@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	JWTAuthScopes    = "JWTAuth.Scopes"
 	BearerAuthScopes = "bearerAuth.Scopes"
 )
 

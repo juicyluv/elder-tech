@@ -124,14 +124,12 @@ func (h HttpHandler) GetUserCourses(w http.ResponseWriter, r *http.Request, id i
 func (h HttpHandler) DeleteCourse(w http.ResponseWriter, r *http.Request, id int32) {
 	_, err := db.GetCourse(r.Context(), id)
 	if err != nil {
-		if err != nil {
-			if stderrors.Is(err, pgx.ErrNoRows) {
-				ErrorResponse(w, r, errors.NewNotFoundError("Курс не найден.", "course"))
-				return
-			}
-			ErrorResponse(w, r, fmt.Errorf("getting course %d: %w", id, err))
+		if stderrors.Is(err, pgx.ErrNoRows) {
+			ErrorResponse(w, r, errors.NewNotFoundError("Курс не найден.", "course"))
 			return
 		}
+		ErrorResponse(w, r, fmt.Errorf("getting course %d: %w", id, err))
+		return
 	}
 
 	err = db.DeleteCourse(r.Context(), id)
@@ -146,14 +144,12 @@ func (h HttpHandler) DeleteCourse(w http.ResponseWriter, r *http.Request, id int
 func (h HttpHandler) GetCourse(w http.ResponseWriter, r *http.Request, id int32) {
 	course, err := db.GetCourse(r.Context(), id)
 	if err != nil {
-		if err != nil {
-			if stderrors.Is(err, pgx.ErrNoRows) {
-				ErrorResponse(w, r, errors.NewNotFoundError("Курс не найден.", "course"))
-				return
-			}
-			ErrorResponse(w, r, fmt.Errorf("getting course %d: %w", id, err))
+		if stderrors.Is(err, pgx.ErrNoRows) {
+			ErrorResponse(w, r, errors.NewNotFoundError("Курс не найден.", "course"))
 			return
 		}
+		ErrorResponse(w, r, fmt.Errorf("getting course %d: %w", id, err))
+		return
 	}
 
 	render.JSON(w, r, FromDomainCourseToCourse(course))
@@ -177,14 +173,12 @@ func (h HttpHandler) UpdateCourse(w http.ResponseWriter, r *http.Request, id int
 func (h HttpHandler) GetCourseMembers(w http.ResponseWriter, r *http.Request, id int32) {
 	_, err := db.GetCourse(r.Context(), id)
 	if err != nil {
-		if err != nil {
-			if stderrors.Is(err, pgx.ErrNoRows) {
-				ErrorResponse(w, r, errors.NewNotFoundError("Курс не найден.", "course"))
-				return
-			}
-			ErrorResponse(w, r, fmt.Errorf("getting course %d: %w", id, err))
+		if stderrors.Is(err, pgx.ErrNoRows) {
+			ErrorResponse(w, r, errors.NewNotFoundError("Курс не найден.", "course"))
 			return
 		}
+		ErrorResponse(w, r, fmt.Errorf("getting course %d: %w", id, err))
+		return
 	}
 
 	members, err := db.GetCourseMembers(r.Context(), id)
@@ -203,28 +197,52 @@ func (h HttpHandler) GetCourseMembers(w http.ResponseWriter, r *http.Request, id
 	})
 }
 
-func (h HttpHandler) AddCourseMembers(w http.ResponseWriter, r *http.Request, id int32) {
+func (h HttpHandler) JoinCourse(w http.ResponseWriter, r *http.Request, id int32) {
 	_, err := db.GetCourse(r.Context(), id)
 	if err != nil {
-		if err != nil {
-			if stderrors.Is(err, pgx.ErrNoRows) {
-				ErrorResponse(w, r, errors.NewNotFoundError("Курс не найден.", "course"))
-				return
-			}
-			ErrorResponse(w, r, fmt.Errorf("getting course %d: %w", id, err))
+		if stderrors.Is(err, pgx.ErrNoRows) {
+			ErrorResponse(w, r, errors.NewNotFoundError("Курс не найден.", "course"))
 			return
 		}
+		ErrorResponse(w, r, fmt.Errorf("getting course %d: %w", id, err))
+		return
 	}
 
 	user, err := auth.GetAuthContextFromContext(r.Context())
 	if err != nil {
-		ErrorResponse(w, r, fmt.Errorf("getting auth context"))
+		ErrorResponse(w, r, err)
 		return
 	}
 
 	err = db.AddCourseMember(r.Context(), id, user.ID)
 	if err != nil {
 		ErrorResponse(w, r, fmt.Errorf("adding course %d member %d: %w", id, user.ID, err))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h HttpHandler) LeaveCourse(w http.ResponseWriter, r *http.Request, id int32) {
+	_, err := db.GetCourse(r.Context(), id)
+	if err != nil {
+		if stderrors.Is(err, pgx.ErrNoRows) {
+			ErrorResponse(w, r, errors.NewNotFoundError("Курс не найден.", "course"))
+			return
+		}
+		ErrorResponse(w, r, fmt.Errorf("getting course %d: %w", id, err))
+		return
+	}
+
+	user, err := auth.GetAuthContextFromContext(r.Context())
+	if err != nil {
+		ErrorResponse(w, r, err)
+		return
+	}
+
+	err = db.RemoveCourseMember(r.Context(), id, user.ID)
+	if err != nil {
+		ErrorResponse(w, r, fmt.Errorf("removing course %d member %d: %w", id, user.ID, err))
 		return
 	}
 

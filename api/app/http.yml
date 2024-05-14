@@ -19,6 +19,8 @@ paths:
           type: integer
           format: int32
     get:
+      security:
+        - JWTAuth: [ ]
       operationId: GetCourse
       description: Получить курс
       tags:
@@ -37,8 +39,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
     patch:
+      security:
+        - JWTAuth: [ ]
       operationId: UpdateCourse
-      description: Обновить курс
+      description: Обновить курс [НЕ РАБОТАЕТ СЕЙЧАС]
       tags:
         - Courses
       responses:
@@ -51,6 +55,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
     delete:
+      security:
+        - JWTAuth: [ ]
       operationId: DeleteCourse
       description: Удалить курс
       tags:
@@ -69,6 +75,8 @@ paths:
     post:
       operationId: CreateCourse
       description: Создать курс
+      security:
+        - JWTAuth: []
       tags:
         - Courses
       requestBody:
@@ -130,6 +138,8 @@ paths:
           type: integer
           format: int64
     get:
+      security:
+        - JWTAuth: [ ]
       operationId: GetUserCourses
       description: Get user courses
       tags:
@@ -163,6 +173,8 @@ paths:
           type: integer
           format: int64
     get:
+      security:
+        - JWTAuth: [ ]
       operationId: GetAuthorCourses
       description: Get author courses
       tags:
@@ -195,6 +207,8 @@ paths:
           type: integer
           format: int32
     get:
+      security:
+        - JWTAuth: [ ]
       operationId: GetCourseMembers
       description: Получить пользователей курса
       tags:
@@ -217,9 +231,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+
+  /courses/{id}/join:
+    parameters:
+      - name: id
+        in: path
+        description: ID курса
+        required: true
+        schema:
+          type: integer
+          format: int32
     post:
-      operationId: AddCourseMembers
-      description: Добавить курс пользователю
+      operationId: JoinCourse
+      description: Войти в курс текущим пользователем
+      security:
+        - JWTAuth: [ ]
       tags:
         - Courses
       responses:
@@ -231,8 +257,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+
+  /courses/{id}/leave:
+    parameters:
+      - name: id
+        in: path
+        description: ID курса
+        required: true
+        schema:
+          type: integer
+          format: int32
+    post:
+      operationId: LeaveCourse
+      description: Выйти из курса текущим пользователем
+      security:
+        - JWTAuth: [ ]
+      tags:
+        - Courses
+      responses:
+        200:
+          description: OK
+        default:
+          description: Default response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /courses/categories:
     get:
+      security:
+        - JWTAuth: [ ]
       operationId: GetCourseCategories
       description: Get course categories
       tags:
@@ -334,6 +389,8 @@ paths:
           type: integer
           format: int64
     patch:
+      security:
+        - JWTAuth: [ ]
       tags:
         - Users
       operationId: UpdateUser
@@ -375,6 +432,8 @@ paths:
         200:
           description: OK
     get:
+      security:
+        - JWTAuth: [ ]
       tags:
         - Users
       operationId: GetUser
@@ -402,6 +461,8 @@ paths:
           type: integer
           format: int64
     patch:
+      security:
+        - JWTAuth: [ ]
       tags:
         - Users
       operationId: UpdateUserImage
@@ -428,6 +489,8 @@ paths:
 
   /images/{id}:
     get:
+      security:
+        - JWTAuth: [ ]
       operationId: GetImage
       summary: Get image content by ID
       description: Retrieve the image content using its ID.
@@ -454,6 +517,8 @@ paths:
 
   /courses/{id}/blocks:
     post:
+      security:
+        - JWTAuth: [ ]
       operationId: AddCourseBlock
       summary: Add course block
       parameters:
@@ -501,6 +566,12 @@ paths:
           description: Internal server error
 
 components:
+  securitySchemes:
+    JWTAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Enter JWT token in the format `Bearer {token}`
   schemas:
     Course:
       description: Course
