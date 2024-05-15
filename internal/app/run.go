@@ -13,9 +13,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rs/cors"
 
 	"diplom-backend/internal/common/config"
 	"diplom-backend/internal/db"
@@ -60,18 +60,25 @@ func (a *App) Run(ctx context.Context) error {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(handlers.AuthMiddleware)
-
-	// CORS middleware
-	corsMiddleware := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:*", "http://127.0.0.1:*"},
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(cors.New(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*", "http://localhost:*", "http://127.0.0.1:*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Session-Id"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
-	})
-	r.Use(corsMiddleware.Handler)
+	}).Handler)
+	r.Use(
+		middleware.SetHeader("X-Content-Type-Options", "nosniff"),
+		middleware.SetHeader("X-Frame-Options", "deny"),
+	)
+	r.Use(middleware.NoCache)
+
+	r.Use(handlers.AuthMiddleware)
 
 	r.Get("/docs/http", handler.DocsFile)
 	r.Get("/docs", handler.DocsPage)
@@ -84,7 +91,11 @@ func (a *App) Run(ctx context.Context) error {
 
 	httpServerCh := make(chan error)
 	go func() {
-		httpServerCh <- a.httpServer.ListenAndServe()
+		if config.HttpsCertPath() != "" && config.HttpsKeyPath() != "" {
+			httpServerCh <- a.httpServer.ListenAndServeTLS(config.HttpsCertPath(), config.HttpsKeyPath())
+		} else {
+			httpServerCh <- a.httpServer.ListenAndServe()
+		}
 	}()
 
 	slog.Info(

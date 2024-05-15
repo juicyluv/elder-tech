@@ -10,7 +10,9 @@ import (
 
 type config struct {
 	Http struct {
-		Port int16 `yaml:"port"`
+		Port          int16  `yaml:"port"`
+		HTTPSKeyPath  string `yaml:"https_key_path"`
+		HTTPSCertPath string `yaml:"https_cert_path"`
 	} `yaml:"http"`
 	DatabaseURL string `yaml:"databaseURL"`
 }
@@ -28,6 +30,14 @@ func DatabaseURL() string {
 	return cfg.DatabaseURL
 }
 
+func HttpsCertPath() string {
+	return cfg.Http.HTTPSCertPath
+}
+
+func HttpsKeyPath() string {
+	return cfg.Http.HTTPSKeyPath
+}
+
 func MustReadConfigFromFile(filepath string) {
 	once.Do(func() {
 		data, err := os.ReadFile(filepath)
@@ -40,6 +50,4 @@ func MustReadConfigFromFile(filepath string) {
 			log.Fatalf("Unmarshalling config from file %s: %v\n", filepath, err)
 		}
 	})
-
-	return
 }
