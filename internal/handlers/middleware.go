@@ -13,7 +13,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/v1/auth/sign-in" ||
 			r.URL.Path == "/api/v1/auth/sign-up" ||
-			r.URL.Path == "/api/v1/courses" && r.Method == "POST" ||
 			strings.HasPrefix(r.URL.Path, "/docs") && r.Method == "GET" ||
 			strings.HasPrefix(r.URL.Path, "/static") && r.Method == "GET" {
 			next.ServeHTTP(w, r)
@@ -44,9 +43,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			Name: claims.Name,
 		}
 
-		ctx := auth.SetAuthContext(r.Context(), ac)
-		r = r.WithContext(ctx)
-
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(auth.SetAuthContext(r.Context(), ac)))
 	})
 }

@@ -10,7 +10,8 @@ import (
 
 type config struct {
 	Http struct {
-		Port          int16  `yaml:"port"`
+		HttpPort      string `yaml:"http_port"`
+		HttpsPort     string `yaml:"https_port"`
 		HTTPSKeyPath  string `yaml:"https_key_path"`
 		HTTPSCertPath string `yaml:"https_cert_path"`
 	} `yaml:"http"`
@@ -22,8 +23,12 @@ var (
 	once sync.Once
 )
 
-func HttpPort() int16 {
-	return cfg.Http.Port
+func HttpPort() string {
+	return cfg.Http.HttpPort
+}
+
+func HttpsPort() string {
+	return cfg.Http.HttpsPort
 }
 
 func DatabaseURL() string {

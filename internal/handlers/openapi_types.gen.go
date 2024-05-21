@@ -117,8 +117,19 @@ type CreateCourseJSONBody struct {
 	Title                 string  `json:"title"`
 }
 
+// UpdateCourseBlockJSONBody defines parameters for UpdateCourseBlock.
+type UpdateCourseBlockJSONBody struct {
+	Description string `json:"description"`
+	Number      int    `json:"number"`
+	Title       string `json:"title"`
+}
+
 // AddCourseBlockJSONBody defines parameters for AddCourseBlock.
-type AddCourseBlockJSONBody interface{}
+type AddCourseBlockJSONBody struct {
+	Description string `json:"description"`
+	Number      int    `json:"number"`
+	Title       string `json:"title"`
+}
 
 // UpdateUserJSONBody defines parameters for UpdateUser.
 type UpdateUserJSONBody struct {
@@ -144,6 +155,9 @@ type SignUpJSONRequestBody SignUpJSONBody
 
 // CreateCourseJSONRequestBody defines body for CreateCourse for application/json ContentType.
 type CreateCourseJSONRequestBody CreateCourseJSONBody
+
+// UpdateCourseBlockJSONRequestBody defines body for UpdateCourseBlock for application/json ContentType.
+type UpdateCourseBlockJSONRequestBody UpdateCourseBlockJSONBody
 
 // AddCourseBlockJSONRequestBody defines body for AddCourseBlock for application/json ContentType.
 type AddCourseBlockJSONRequestBody AddCourseBlockJSONBody

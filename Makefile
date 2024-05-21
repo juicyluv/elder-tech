@@ -3,7 +3,7 @@ openapi: openapi_http
 
 .PHONY: openapi_http
 openapi_http:
-	@./scripts/openapi-http.sh users internal/users main
+	@./scripts/openapi-http.sh
 
 .PHONY: run
 run:

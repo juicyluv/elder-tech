@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	stdhttp "net/http"
 	"os"
 	"os/signal"
@@ -85,21 +86,36 @@ func (a *App) Run(ctx context.Context) error {
 	r.Get("/static/*", handler.Static)
 
 	a.httpServer = &stdhttp.Server{
-		Addr:    fmt.Sprintf(":%d", config.HttpPort()),
+		Addr:    fmt.Sprintf(":" + config.HttpPort()),
 		Handler: handlers.HandlerFromMuxWithBaseURL(handler, r, "/api/v1"),
 	}
 
 	httpServerCh := make(chan error)
+	httpsServerCh := make(chan error)
+
 	go func() {
-		if config.HttpsCertPath() != "" && config.HttpsKeyPath() != "" {
-			httpServerCh <- a.httpServer.ListenAndServeTLS(config.HttpsCertPath(), config.HttpsKeyPath())
-		} else {
-			httpServerCh <- a.httpServer.ListenAndServe()
-		}
+		httpServerCh <- a.httpServer.ListenAndServe()
 	}()
 
+	var httpsServer *http.Server
+	if config.HttpsCertPath() != "" && config.HttpsKeyPath() != "" {
+		httpsServer = &stdhttp.Server{
+			Addr:    fmt.Sprintf(":" + config.HttpsPort()),
+			Handler: handlers.HandlerFromMuxWithBaseURL(handler, r, "/api/v1"),
+		}
+
+		go func() {
+			httpsServerCh <- httpsServer.ListenAndServeTLS(config.HttpsCertPath(), config.HttpsKeyPath())
+		}()
+
+		slog.Info(
+			"HTTPS server is started",
+			slog.String("addr", httpsServer.Addr),
+		)
+	}
+
 	slog.Info(
-		"Server is started",
+		"HTTP server is started",
 		slog.String("addr", a.httpServer.Addr),
 	)
 
@@ -110,7 +126,9 @@ func (a *App) Run(ctx context.Context) error {
 	case s := <-interrupt:
 		slog.Info("Interrupt signal: " + s.String())
 	case err = <-httpServerCh:
-		slog.Error("Server stop signal: " + err.Error())
+		slog.Error("HTTP server stop signal: " + err.Error())
+	case err = <-httpsServerCh:
+		slog.Error("HTTPS server stop signal: " + err.Error())
 	}
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -119,9 +137,17 @@ func (a *App) Run(ctx context.Context) error {
 	// Shutdown
 	err = a.httpServer.Shutdown(shutdownCtx)
 	if err != nil {
-		slog.Error("failed to shutdown the server: " + err.Error())
+		slog.Error("failed to shutdown the HTTP server: " + err.Error())
 	}
-	slog.Info("Server has been shut down successfully")
+	slog.Info("HTTP server has been shut down successfully")
+
+	if httpsServer != nil {
+		err = httpsServer.Shutdown(shutdownCtx)
+		if err != nil {
+			slog.Error("failed to shutdown the HTTPS server: " + err.Error())
+		}
+		slog.Info("HTTPS server has been shut down successfully")
+	}
 
 	return nil
 }

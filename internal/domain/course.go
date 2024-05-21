@@ -25,8 +25,8 @@ type Course struct {
 	Blocks     []CourseBlock
 
 	AuthorName       string
-	AuthorSurname    string
-	AuthorPatronymic string
+	AuthorSurname    *string
+	AuthorPatronymic *string
 }
 
 func (c *Course) CalculateRating(ratingSum, ratingCount *int) {

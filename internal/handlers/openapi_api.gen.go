@@ -26,6 +26,12 @@ type ServerInterface interface {
 
 	// (GET /courses/author/{id})
 	GetAuthorCourses(w http.ResponseWriter, r *http.Request, id int64)
+	// Delete course block
+	// (DELETE /courses/blocks/{id})
+	DeleteCourseBlock(w http.ResponseWriter, r *http.Request, id int64)
+	// Update course block
+	// (PATCH /courses/blocks/{id})
+	UpdateCourseBlock(w http.ResponseWriter, r *http.Request, id int64)
 
 	// (GET /courses/categories)
 	GetCourseCategories(w http.ResponseWriter, r *http.Request)
@@ -41,6 +47,9 @@ type ServerInterface interface {
 
 	// (PATCH /courses/{id})
 	UpdateCourse(w http.ResponseWriter, r *http.Request, id int32)
+	// Get course blocks
+	// (GET /courses/{id}/blocks)
+	GetCourseBlocks(w http.ResponseWriter, r *http.Request, id int32)
 	// Add course block
 	// (POST /courses/{id}/blocks)
 	AddCourseBlock(w http.ResponseWriter, r *http.Request, id int32)
@@ -91,6 +100,18 @@ func (_ Unimplemented) GetAuthorCourses(w http.ResponseWriter, r *http.Request, 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Delete course block
+// (DELETE /courses/blocks/{id})
+func (_ Unimplemented) DeleteCourseBlock(w http.ResponseWriter, r *http.Request, id int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update course block
+// (PATCH /courses/blocks/{id})
+func (_ Unimplemented) UpdateCourseBlock(w http.ResponseWriter, r *http.Request, id int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /courses/categories)
 func (_ Unimplemented) GetCourseCategories(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -113,6 +134,12 @@ func (_ Unimplemented) GetCourse(w http.ResponseWriter, r *http.Request, id int3
 
 // (PATCH /courses/{id})
 func (_ Unimplemented) UpdateCourse(w http.ResponseWriter, r *http.Request, id int32) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get course blocks
+// (GET /courses/{id}/blocks)
+func (_ Unimplemented) GetCourseBlocks(w http.ResponseWriter, r *http.Request, id int32) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -246,6 +273,62 @@ func (siw *ServerInterfaceWrapper) GetAuthorCourses(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// DeleteCourseBlock operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCourseBlock(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCourseBlock(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// UpdateCourseBlock operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCourseBlock(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCourseBlock(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // GetCourseCategories operation middleware
 func (siw *ServerInterfaceWrapper) GetCourseCategories(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -366,6 +449,34 @@ func (siw *ServerInterfaceWrapper) UpdateCourse(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateCourse(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetCourseBlocks operation middleware
+func (siw *ServerInterfaceWrapper) GetCourseBlocks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int32
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCourseBlocks(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -725,6 +836,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/courses/author/{id}", wrapper.GetAuthorCourses)
 	})
 	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/courses/blocks/{id}", wrapper.DeleteCourseBlock)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/courses/blocks/{id}", wrapper.UpdateCourseBlock)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/courses/categories", wrapper.GetCourseCategories)
 	})
 	r.Group(func(r chi.Router) {
@@ -738,6 +855,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Patch(options.BaseURL+"/courses/{id}", wrapper.UpdateCourse)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/courses/{id}/blocks", wrapper.GetCourseBlocks)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/courses/{id}/blocks", wrapper.AddCourseBlock)
