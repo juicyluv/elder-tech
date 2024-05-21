@@ -32,9 +32,21 @@ type ServerInterface interface {
 	// Update course block
 	// (PATCH /courses/blocks/{id})
 	UpdateCourseBlock(w http.ResponseWriter, r *http.Request, id int64)
+	// Get course block lessons
+	// (GET /courses/blocks/{id}/lessons)
+	GetCourseBlockLessons(w http.ResponseWriter, r *http.Request, id int64)
+	// Add course block lesson
+	// (POST /courses/blocks/{id}/lessons)
+	AddCourseBlockLesson(w http.ResponseWriter, r *http.Request, id int64)
 
 	// (GET /courses/categories)
 	GetCourseCategories(w http.ResponseWriter, r *http.Request)
+	// Delete course block lesson
+	// (DELETE /courses/lessons/{id})
+	DeleteCourseBlockLesson(w http.ResponseWriter, r *http.Request, id int64)
+	// Update course block lesson
+	// (PATCH /courses/lessons/{id})
+	UpdateCourseBlockLesson(w http.ResponseWriter, r *http.Request, id int64)
 
 	// (GET /courses/user/{id})
 	GetUserCourses(w http.ResponseWriter, r *http.Request, id int64)
@@ -112,8 +124,32 @@ func (_ Unimplemented) UpdateCourseBlock(w http.ResponseWriter, r *http.Request,
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Get course block lessons
+// (GET /courses/blocks/{id}/lessons)
+func (_ Unimplemented) GetCourseBlockLessons(w http.ResponseWriter, r *http.Request, id int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Add course block lesson
+// (POST /courses/blocks/{id}/lessons)
+func (_ Unimplemented) AddCourseBlockLesson(w http.ResponseWriter, r *http.Request, id int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /courses/categories)
 func (_ Unimplemented) GetCourseCategories(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete course block lesson
+// (DELETE /courses/lessons/{id})
+func (_ Unimplemented) DeleteCourseBlockLesson(w http.ResponseWriter, r *http.Request, id int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update course block lesson
+// (PATCH /courses/lessons/{id})
+func (_ Unimplemented) UpdateCourseBlockLesson(w http.ResponseWriter, r *http.Request, id int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -329,6 +365,62 @@ func (siw *ServerInterfaceWrapper) UpdateCourseBlock(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
+// GetCourseBlockLessons operation middleware
+func (siw *ServerInterfaceWrapper) GetCourseBlockLessons(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCourseBlockLessons(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// AddCourseBlockLesson operation middleware
+func (siw *ServerInterfaceWrapper) AddCourseBlockLesson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddCourseBlockLesson(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // GetCourseCategories operation middleware
 func (siw *ServerInterfaceWrapper) GetCourseCategories(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -337,6 +429,62 @@ func (siw *ServerInterfaceWrapper) GetCourseCategories(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCourseCategories(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// DeleteCourseBlockLesson operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCourseBlockLesson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCourseBlockLesson(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// UpdateCourseBlockLesson operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCourseBlockLesson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, JWTAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCourseBlockLesson(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -842,7 +990,19 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/courses/blocks/{id}", wrapper.UpdateCourseBlock)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/courses/blocks/{id}/lessons", wrapper.GetCourseBlockLessons)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/courses/blocks/{id}/lessons", wrapper.AddCourseBlockLesson)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/courses/categories", wrapper.GetCourseCategories)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/courses/lessons/{id}", wrapper.DeleteCourseBlockLesson)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/courses/lessons/{id}", wrapper.UpdateCourseBlockLesson)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/courses/user/{id}", wrapper.GetUserCourses)

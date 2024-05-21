@@ -47,6 +47,15 @@ type CourseBlock struct {
 	Title       string `json:"title"`
 }
 
+// CourseBlockLesson defines model for CourseBlockLesson.
+type CourseBlockLesson struct {
+	CourseBlockId int64  `json:"course_block_id"`
+	Description   string `json:"description"`
+	Id            int64  `json:"id"`
+	Number        int    `json:"number"`
+	Title         string `json:"title"`
+}
+
 // CourseCategory defines model for CourseCategory.
 type CourseCategory struct {
 	Id   int16  `json:"id"`
@@ -124,6 +133,20 @@ type UpdateCourseBlockJSONBody struct {
 	Title       string `json:"title"`
 }
 
+// AddCourseBlockLessonJSONBody defines parameters for AddCourseBlockLesson.
+type AddCourseBlockLessonJSONBody struct {
+	Description string `json:"description"`
+	Number      int    `json:"number"`
+	Title       string `json:"title"`
+}
+
+// UpdateCourseBlockLessonJSONBody defines parameters for UpdateCourseBlockLesson.
+type UpdateCourseBlockLessonJSONBody struct {
+	Description string `json:"description"`
+	Number      int    `json:"number"`
+	Title       string `json:"title"`
+}
+
 // AddCourseBlockJSONBody defines parameters for AddCourseBlock.
 type AddCourseBlockJSONBody struct {
 	Description string `json:"description"`
@@ -158,6 +181,12 @@ type CreateCourseJSONRequestBody CreateCourseJSONBody
 
 // UpdateCourseBlockJSONRequestBody defines body for UpdateCourseBlock for application/json ContentType.
 type UpdateCourseBlockJSONRequestBody UpdateCourseBlockJSONBody
+
+// AddCourseBlockLessonJSONRequestBody defines body for AddCourseBlockLesson for application/json ContentType.
+type AddCourseBlockLessonJSONRequestBody AddCourseBlockLessonJSONBody
+
+// UpdateCourseBlockLessonJSONRequestBody defines body for UpdateCourseBlockLesson for application/json ContentType.
+type UpdateCourseBlockLessonJSONRequestBody UpdateCourseBlockLessonJSONBody
 
 // AddCourseBlockJSONRequestBody defines body for AddCourseBlock for application/json ContentType.
 type AddCourseBlockJSONRequestBody AddCourseBlockJSONBody

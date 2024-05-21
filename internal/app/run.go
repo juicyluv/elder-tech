@@ -61,10 +61,6 @@ func (a *App) Run(ctx context.Context) error {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
 	r.Use(cors.New(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*", "http://localhost:*", "http://127.0.0.1:*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -73,11 +69,6 @@ func (a *App) Run(ctx context.Context) error {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}).Handler)
-	r.Use(
-		middleware.SetHeader("X-Content-Type-Options", "nosniff"),
-		middleware.SetHeader("X-Frame-Options", "deny"),
-	)
-	r.Use(middleware.NoCache)
 
 	r.Use(handlers.AuthMiddleware)
 

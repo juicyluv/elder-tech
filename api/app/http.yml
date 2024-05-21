@@ -530,7 +530,7 @@ paths:
       security:
         - JWTAuth: [ ]
       tags:
-        - Courses
+        - Course Blocks
       requestBody:
         required: true
         content:
@@ -570,20 +570,21 @@ paths:
       security:
         - JWTAuth: [ ]
       tags:
-        - Courses
+        - Course Blocks
       responses:
         200:
           description: OK
           content:
             application/json:
-              type: object
-              required:
-                - id
               schema:
-                blocks:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/CourseBlock'
+                type: object
+                required:
+                  - blocks
+                properties:
+                  blocks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CourseBlock'
         404:
           description: Course not found
         500:
@@ -604,7 +605,7 @@ paths:
       security:
         - JWTAuth: [ ]
       tags:
-        - Courses
+        - Course Blocks
       requestBody:
         content:
           application/json:
@@ -634,7 +635,7 @@ paths:
       security:
         - JWTAuth: [ ]
       tags:
-        - Courses
+        - Course Blocks
       responses:
         200:
           description: OK
@@ -643,6 +644,134 @@ paths:
         500:
           description: Internal server error
 
+  /courses/blocks/{id}/lessons:
+    parameters:
+      - name: id
+        in: path
+        description: ID блока курса
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      operationId: AddCourseBlockLesson
+      summary: Add course block lesson
+      security:
+        - JWTAuth: [ ]
+      tags:
+        - Course Lessons
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - number
+                - title
+                - description
+              properties:
+                number:
+                  type: integer
+                title:
+                  type: string
+                description:
+                  type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              type: object
+              required:
+                - id
+              schema:
+                id:
+                  type: integer
+                  format: int64
+        404:
+          description: Course not found
+        500:
+          description: Internal server error
+    get:
+      operationId: GetCourseBlockLessons
+      summary: Get course block lessons
+      security:
+        - JWTAuth: [ ]
+      tags:
+        - Course Lessons
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - lessons
+                properties:
+                  lessons:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CourseBlockLesson'
+        404:
+          description: Course not found
+        500:
+          description: Internal server error
+
+  /courses/lessons/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: ID урока
+        required: true
+        schema:
+          type: integer
+          format: int64
+    patch:
+      operationId: UpdateCourseBlockLesson
+      summary: Update course block lesson
+      security:
+        - JWTAuth: [ ]
+      tags:
+        - Course Lessons
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - number
+                - title
+                - description
+              properties:
+                number:
+                  type: integer
+                title:
+                  type: string
+                description:
+                  type: string
+      responses:
+        200:
+          description: OK
+        404:
+          description: Course block not found
+        500:
+          description: Internal server error
+    delete:
+      operationId: DeleteCourseBlockLesson
+      summary: Delete course block lesson
+      security:
+        - JWTAuth: [ ]
+      tags:
+        - Course Lessons
+      responses:
+        200:
+          description: OK
+        404:
+          description: Course block not found
+        500:
+          description: Internal server error
 
 components:
   securitySchemes:
@@ -813,6 +942,28 @@ components:
         course_id:
           type: integer
           format: int32
+        number:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+
+    CourseBlockLesson:
+      type: object
+      required:
+        - id
+        - course_block_id
+        - number
+        - title
+        - description
+      properties:
+        id:
+          type: integer
+          format: int64
+        course_block_id:
+          type: integer
+          format: int64
         number:
           type: integer
         title:
