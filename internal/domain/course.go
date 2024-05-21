@@ -58,3 +58,11 @@ type CourseBlockLesson struct {
 	Title         string
 	Description   string
 }
+
+type CourseBlockLessonContent struct {
+	ID       int64
+	LessonID int64
+	Number   int
+	Type     int16
+	Value    string
+}
