@@ -63,7 +63,7 @@ func (a *App) Run(ctx context.Context) error {
 	r.Use(middleware.Recoverer)
 	r.Use(cors.New(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*", "http://localhost:*", "http://127.0.0.1:*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Session-Id"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
